@@ -162,12 +162,16 @@ export function applyAction(pos: Position, a: Action): Position {
       break
     }
     case 'swap': {
-      for (let i = 0; i < cells.length; i++) {
-        if (cells[i] !== null) cells[i] = other(cells[i]!)
-      }
-      const b = reserves.black
-      reserves.black = reserves.white
-      reserves.white = b
+      const origin = pos.cells.findIndex((c) => c !== null)
+      if (origin < 0) throw new IllegalMoveError(JSON.stringify(a))
+      cells[origin] = null
+      const mirrorRow = SIZE - 1 - Math.floor(origin / SIZE)
+      const mirrorCol = SIZE - 1 - (origin % SIZE)
+      const mirror = idx(mirrorRow, mirrorCol)
+      if (cells[mirror] !== null) throw new IllegalMoveError(JSON.stringify(a))
+      cells[mirror] = other(pos.cells[origin]!)
+      reserves.black += 1
+      reserves.white -= 1
       turn = 'black'
       swapped = true
       break

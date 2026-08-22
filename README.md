@@ -17,7 +17,7 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
   - l'adversaire ne possède plus aucune pierre (**anéantissement**) ;
   - l'adversaire n'a aucun coup légal (**immobilisation**).
 - **Anti-répétition** : interdiction de recréer une position identique trois fois *(paramètre à calibrer)*.
-- **Règle du swap** : après le tout premier coup, le joueur 2 peut échanger les couleurs (neutralise l'avantage du premier joueur).
+- **Règle du swap** : après le tout premier coup, le joueur 2 peut l'annuler — la pierre noire est retirée et une pierre blanche est posée à sa position symétrique (miroir central du plateau). Neutralise l'avantage du premier joueur sans changer les sièges.
 
 ## Pourquoi ça peut être profond
 

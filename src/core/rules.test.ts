@@ -7,6 +7,7 @@ import {
   SIZE,
   START_RESERVE,
   applyAction,
+  idx,
   initialState,
   legalActions,
   outcome,
@@ -97,12 +98,14 @@ describe('applyAction', () => {
     expect(next.cells[4 * SIZE + 4]).toBeNull()
   })
 
-  it('le swap inverse couleurs, réserves et rend le trait à noir', () => {
+  it('le swap miroir : la pierre noire devient blanche en position symétrique', () => {
     let pos = applyAction(initialState(), { kind: 'place', row: 0, col: 4 })
     pos = applyAction(pos, { kind: 'swap' })
     expect(pos.swapped).toBe(true)
     expect(pos.turn).toBe('black')
-    expect(pos.cells[4]).toBe('white')
+    expect(pos.cells[4]).toBeNull()
+    const mirror = idx(SIZE - 1, SIZE - 1 - 4)
+    expect(pos.cells[mirror]).toBe('white')
     expect(pos.reserves.black).toBe(START_RESERVE)
     expect(pos.reserves.white).toBe(START_RESERVE - 1)
     expect(legalActions(pos).some((a) => a.kind === 'swap')).toBe(false)
