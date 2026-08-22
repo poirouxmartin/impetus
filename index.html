@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Glisse</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1>Glisse</h1>
+      <div id="status"></div>
+      <canvas id="board" width="630" height="630"></canvas>
+      <div id="controls">
+        <button id="new">Nouvelle partie</button>
+        <button id="undo">Annuler</button>
+        <button id="swap" hidden>Échanger (swap)</button>
+      </div>
+      <p class="hint">
+        Clique sur une case de ta rangée de départ pour <strong>poser</strong> une pierre.
+        Clique sur ta pierre puis sur une destination pour la <strong>glisser</strong> (portée max : 3 cases).
+        Une pierre qui atteint la rangée adverse gagne.
+      </p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

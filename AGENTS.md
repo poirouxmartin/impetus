@@ -10,9 +10,10 @@ Jeu de plateau abstrait 1v1, zéro hasard : poser ou glisser des pierres, captur
 - Cœur de jeu en module pur (aucune dépendance au rendu) : testable unitairement et branchable sur `game-solver`.
 - Rendu Canvas 2D léger ; Phaser seulement si le besoin grandit.
 
-## Règles (v1 — synthèse)
+## Règles (v1.1 — synthèse)
 
 - Plateau 9×9, réserve de 10 pierres chacun. Noir commence (rangée du haut), Blanc en bas.
-- Une action par tour : **Poser** (case vide de sa rangée de départ) ou **Glisser** (tout droit jusqu'au premier obstacle ; obstacle adverse = capture).
-- Victoire : percée (atteindre la rangée adverse) · anéantissement (plus de pierres adverses) · immobilisation (adversaire sans coup légal).
-- Swap possible après le premier coup ; anti-répétition à calibrer.
+- Une action par tour : **Poser** (case vide de sa rangée de départ) ou **Glisser** (tout droit, **portée max 3** ; obstacle adverse = capture, même adjacent ; obstacle allié/bord = arrêt avant ; sinon arrêt en fin de portée).
+- Victoire : percée (atteindre la rangée adverse) · anéantissement (plus de pierres adverses) · immobilisation (adversaire sans coup non répétitif).
+- Swap possible après le premier coup ; anti-répétition : une position identique ne peut pas être recréée une 3e fois.
+- Portée illimitée (v1) = percée triviale au 2e coup → voir « Journal des règles » du README.

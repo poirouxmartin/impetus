@@ -1,0 +1,75 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #14161a;
+  color: #e8e6e3;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+#status {
+  min-height: 1.4em;
+  font-size: 1.05rem;
+}
+
+#status .winner {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+canvas {
+  border: 1px solid #3a3f47;
+  border-radius: 6px;
+  background: #1d2129;
+  touch-action: manipulation;
+  max-width: min(92vw, 630px);
+  height: auto;
+}
+
+#controls {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  background: #2a2f38;
+  color: #e8e6e3;
+  border: 1px solid #3a3f47;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #353c47;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.hint {
+  max-width: 560px;
+  text-align: center;
+  color: #9aa0a8;
+  font-size: 0.85rem;
+}
