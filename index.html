@@ -8,18 +8,54 @@
   <body>
     <div id="app">
       <h1>Glisse</h1>
-      <div id="status"></div>
-      <canvas id="board" width="630" height="630"></canvas>
-      <div id="controls">
-        <button id="new">Nouvelle partie</button>
-        <button id="undo">Annuler</button>
-        <button id="swap" hidden>Échanger (swap)</button>
+      <div id="layout">
+        <div id="board-wrap">
+          <canvas id="board" width="630" height="630"></canvas>
+          <div id="banner" hidden>
+            <div class="card">
+              <div class="title"></div>
+              <div class="sub"></div>
+            </div>
+          </div>
+        </div>
+        <aside id="panel">
+          <div id="status"></div>
+          <div id="reserves"></div>
+          <section class="group">
+            <label id="mode-label">
+              <span>Mode</span>
+              <select id="mode">
+                <option value="ai" selected>Contre l'IA</option>
+                <option value="hotseat">2 joueurs</option>
+              </select>
+            </label>
+            <label id="side-label">
+              <span>Ta couleur</span>
+              <select id="side">
+                <option value="black" selected>Noir (commence)</option>
+                <option value="white">Blanc</option>
+              </select>
+            </label>
+            <label id="level-label">
+              <span>Niveau de l'IA</span>
+              <select id="level">
+                <option value="facile">Facile</option>
+                <option value="normal" selected>Normal</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </label>
+          </section>
+          <div id="controls">
+            <button id="new">Nouvelle partie</button>
+            <button id="undo" disabled>Annuler</button>
+            <button id="swap" hidden>Échanger (swap)</button>
+          </div>
+          <p class="hint">
+            Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
+            capture). Trois façons de gagner : percée, anéantissement, immobilisation.
+          </p>
+        </aside>
       </div>
-      <p class="hint">
-        Clique sur une case de ta rangée de départ pour <strong>poser</strong> une pierre.
-        Clique sur ta pierre puis sur une destination pour la <strong>glisser</strong> (portée max : 3 cases).
-        Une pierre qui atteint la rangée adverse gagne.
-      </p>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

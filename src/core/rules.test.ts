@@ -152,7 +152,7 @@ describe('victoires', () => {
     const reps = new Map<string, number>()
     reps.set(positionHash(applyAction(pos, { kind: 'slide', row: 8, col: 8, dir: 'up' })), 2)
     reps.set(positionHash(applyAction(pos, { kind: 'slide', row: 8, col: 8, dir: 'left' })), 2)
-    expect(outcome(pos, 'black', reps)).toBe('black')
+    expect(outcome(pos, 'black', reps)).toEqual({ winner: 'black', reason: 'immobilisation' })
     // Sans historique, les coups existent : pas de fin.
     expect(outcome(pos, 'black', new Map())).toBeNull()
   })

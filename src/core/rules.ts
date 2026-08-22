@@ -194,6 +194,13 @@ export function winnerAfter(pos: Position, mover: Color): Color | null {
   return null
 }
 
+export type WinReason = 'percée' | 'anéantissement' | 'immobilisation'
+
+export interface Outcome {
+  winner: Color
+  reason: WinReason
+}
+
 /**
  * Résultat complet d'une position après le coup de `mover`, en tenant compte de
  * l'anti-répétition : si l'adversaire n'a plus aucun coup créant une position
@@ -203,13 +210,22 @@ export function outcome(
   pos: Position,
   mover: Color,
   reps: ReadonlyMap<string, number>,
-): Color | null {
-  const immediate = winnerAfter(pos, mover)
-  if (immediate !== null) return immediate
+): Outcome | null {
+  const tr = targetRow(mover)
+  for (let col = 0; col < SIZE; col++) {
+    if (pos.cells[idx(tr, col)] === mover) return { winner: mover, reason: 'percée' }
+  }
+  const opp = other(mover)
+  let oppStones = 0
+  for (const c of pos.cells) if (c === opp) oppStones++
+  if (oppStones === 0 && pos.reserves[opp] === 0) {
+    return { winner: mover, reason: 'anéantissement' }
+  }
+  if (legalActions(pos).length === 0) return { winner: mover, reason: 'immobilisation' }
   for (const a of legalActions(pos)) {
     if ((reps.get(positionHash(applyAction(pos, a))) ?? 0) < MAX_OCCURRENCES) return null
   }
-  return mover
+  return { winner: mover, reason: 'immobilisation' }
 }
 
 const MAX_OCCURRENCES = 2
@@ -221,6 +237,7 @@ const MAX_OCCURRENCES = 2
 export class Game {
   position: Position
   winner: Color | null = null
+  winnerReason: WinReason | null = null
 
   private history: Position[] = []
   private reps = new Map<string, number>()
@@ -255,7 +272,9 @@ export class Game {
     this.history.push(this.position)
     this.bump(next)
     this.position = next
-    this.winner = outcome(next, other(next.turn), this.reps)
+    const result = outcome(next, other(next.turn), this.reps)
+    this.winner = result?.winner ?? null
+    this.winnerReason = result?.reason ?? null
     return true
   }
 
@@ -268,6 +287,7 @@ export class Game {
     this.unbump(this.position)
     this.position = this.history.pop()!
     this.winner = null
+    this.winnerReason = null
   }
 
   /** Actions légales pour le trait, filtrées par l'anti-répétition. */
