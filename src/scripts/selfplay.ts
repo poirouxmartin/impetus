@@ -10,9 +10,6 @@ interface GameResult {
   swapUsed: boolean
 }
 
-const budgetFor = (level: Level): number =>
-  level === 'facile' ? 10 : level === 'normal' ? 150 : 350
-
 function playGame(black: Level, white: Level): GameResult {
   const game = new Game()
   let swapUsed = false
@@ -68,8 +65,13 @@ function runMatchup(name: string, black: Level, white: Level, games: number): vo
 }
 
 const games = Number(process.argv[2]) || 16
+const dBudgetMs = Number(process.argv[3]) || 350
+const budgetFor = (level: Level): number =>
+  level === 'facile' ? 10 : level === 'normal' ? 150 : dBudgetMs
 
-console.log(`Self-play Glisse — ${games} parties par affrontement\n`)
+console.log(
+  `Self-play Glisse — ${games} parties par affrontement · budget Difficile ${dBudgetMs} ms\n`,
+)
 runMatchup('Facile (Noir) vs Facile (Blanc)', 'facile', 'facile', games)
 runMatchup('Normal (Noir) vs Normal (Blanc)', 'normal', 'normal', games)
 runMatchup('Difficile (Noir) vs Difficile (Blanc)', 'difficile', 'difficile', games)
