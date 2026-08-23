@@ -13,6 +13,7 @@ import {
   slideDestination,
 } from './core/rules'
 import { Level, chooseAction } from './core/ai'
+import { Analysis as EngineAnalysis, analyse } from './core/engine'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -33,6 +34,11 @@ const swapBtn = document.getElementById('swap') as HTMLButtonElement
 const modeSel = document.getElementById('mode') as HTMLSelectElement
 const sideSel = document.getElementById('side') as HTMLSelectElement
 const levelSel = document.getElementById('level') as HTMLSelectElement
+const liveCb = document.getElementById('live') as HTMLInputElement
+const evalLineEl = document.getElementById('eval-line')!
+const linesEl = document.getElementById('lines')!
+const infoEl = document.getElementById('engine-info')!
+const barWhite = document.getElementById('evalbar-white')!
 
 const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
 const REASON: Record<WinReason, string> = {
@@ -59,6 +65,8 @@ let mode: 'ai' | 'hotseat' = 'ai'
 let humanSide: Color = 'black'
 let level: Level = 'normal'
 let aiThinking = false
+let analysis: EngineAnalysis | null = null
+let liveOn = false
 
 function stonesOnBoard(color: Color): number {
   let n = 0
@@ -113,7 +121,18 @@ function scheduleAi(): void {
   aiThinking = true
   refresh()
   setTimeout(() => {
-    const action = chooseAction(game.position, level, game.legalMoves())
+    let action: Action | null = null
+    const legal = game.legalMoves()
+    if (level === 'difficile') {
+      const a = analyse(game.position, 900)
+      const keyOf = (x: Action): string => JSON.stringify(x)
+      const legalKeys = new Set(legal.map(keyOf))
+      action =
+        a?.lines.find((l) => legalKeys.has(keyOf(l.action)))?.action ??
+        chooseAction(game.position, 'normal', legal)
+    } else {
+      action = chooseAction(game.position, level, legal)
+    }
     aiThinking = false
     if (action) tryPlay(action)
     else refresh()
@@ -122,7 +141,51 @@ function scheduleAi(): void {
 
 function afterMove(): void {
   refresh()
-  if (isAiTurn() && !aiThinking) scheduleAi()
+  analysis = null
+  updateAnalysisPanel()
+  if (isAiTurn() && !aiThinking) {
+    scheduleAi()
+    return
+  }
+  if (liveOn && !game.winner) runAnalysis()
+}
+
+function runAnalysis(): void {
+  analysis = analyse(game.position, 550)
+  updateAnalysisPanel()
+}
+
+function fmtCp(cp: number): string {
+  const v = cp / 100
+  return (v > 0 ? '+' : '') + v.toFixed(1)
+}
+
+function updateAnalysisPanel(): void {
+  if (!liveOn) {
+    evalLineEl.textContent = 'Analyse désactivée'
+    linesEl.innerHTML = ''
+    infoEl.textContent = ''
+    barWhite.style.height = '50%'
+    return
+  }
+  const a = analysis
+  if (!a) {
+    evalLineEl.textContent = '…'
+    linesEl.innerHTML = ''
+    infoEl.textContent = ''
+    return
+  }
+  const cp = a.scoreBlackCp
+  evalLineEl.textContent = `Éval (Noir) : ${fmtCp(cp)}`
+  barWhite.style.height = `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
+  linesEl.innerHTML = a.lines
+    .slice(0, 3)
+    .map((l) => {
+      const relBlack = a.turn === 'black' ? l.score : -l.score
+      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtCp(relBlack)}</span></div>`
+    })
+    .join('')
+  infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
 }
 
 function tryPlay(a: Action): void {
@@ -280,6 +343,34 @@ function render(now: number): void {
     }
   }
 
+  if (analysis && liveOn && !anim && selected === null && !game.winner) {
+    const b = analysis.best
+    if (b && b.action.kind === 'slide') {
+      const dest = slideDestination(
+        game.position.cells,
+        b.action.row,
+        b.action.col,
+        b.action.dir,
+        game.position.turn,
+      )
+      if (dest) {
+        drawArrow(
+          ...center(b.action.row, b.action.col),
+          ...center(dest.row, dest.col),
+          'rgba(126,231,135,0.85)',
+          CELL * 0.12,
+        )
+      }
+    } else if (b && b.action.kind === 'place') {
+      const [px, py] = center(b.action.row, b.action.col)
+      ctx.strokeStyle = 'rgba(126,231,135,0.8)'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(px, py, CELL * 0.3, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+  }
+
   if (selected !== null && !anim) {
     const [sx, sy] = center(Math.floor(selected / SIZE), selected % SIZE)
     ctx.strokeStyle = '#7ee787'
@@ -295,6 +386,45 @@ function render(now: number): void {
       ctx.fill()
     }
   }
+}
+
+function drawArrow(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: string,
+  width: number,
+): void {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const len = Math.hypot(dx, dy)
+  if (len < 1) return
+  const shrink = CELL * 0.34
+  const ex = x2 - (dx / len) * shrink
+  const ey = y2 - (dy / len) * shrink
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = width
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x1 + (dx / len) * shrink * 0.6, y1 + (dy / len) * shrink * 0.6)
+  ctx.lineTo(ex, ey)
+  ctx.stroke()
+  const head = CELL * 0.22
+  const ang = Math.atan2(dy, dx)
+  ctx.beginPath()
+  ctx.moveTo(x2 - (dx / len) * (shrink - head * 0.4), y2 - (dy / len) * (shrink - head * 0.4))
+  ctx.lineTo(
+    ex - Math.sin(ang) * head * 0.7,
+    ey + Math.cos(ang) * head * 0.7,
+  )
+  ctx.lineTo(
+    ex + Math.sin(ang) * head * 0.7,
+    ey - Math.cos(ang) * head * 0.7,
+  )
+  ctx.closePath()
+  ctx.fill()
 }
 
 function hitCell(e: PointerEvent): { r: number; c: number } | null {
@@ -348,6 +478,13 @@ canvas.addEventListener('pointerdown', (e) => {
 
 swapBtn.addEventListener('click', () => {
   if (!aiThinking) tryPlay({ kind: 'swap' })
+})
+
+liveCb.addEventListener('change', () => {
+  liveOn = liveCb.checked
+  analysis = null
+  updateAnalysisPanel()
+  if (liveOn && !game.winner && !aiThinking && !isAiTurn()) runAnalysis()
 })
 
 undoBtn.addEventListener('click', () => {

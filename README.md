@@ -47,6 +47,9 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 | `npm test` | Tests moteur + IA + solveur |
 | `npm run stats` | Self-play IA vs IA (`npm run stats -- <parties> <budgetMsDifficile>`) |
 | `npm run solve` | Complexité du jeu standard + frontière de résolubilité des variantes réduites |
+| `npm run duel` | Nouveau moteur vs ancienne IA (budget en ms, 2×n parties) |
+
+Le niveau **Difficile** utilise le moteur d'analyse (négamax + table de transposition Zobrist + quiescence + détection des pierres en prise). L'UI propose une **analyse en direct** : barre d'évaluation, flèche du meilleur coup, top 3 noté (`a1→a4`, `poser d9`…), profondeur/nœuds.
 
 ## Chiffres mesurés (v1.1)
 

@@ -9,12 +9,15 @@
     <div id="app">
       <h1>Glisse</h1>
       <div id="layout">
-        <div id="board-wrap">
-          <canvas id="board" width="630" height="630"></canvas>
-          <div id="banner" hidden>
-            <div class="card">
-              <div class="title"></div>
-              <div class="sub"></div>
+        <div id="board-area">
+          <div id="evalbar"><div id="evalbar-white"></div></div>
+          <div id="board-stack">
+            <canvas id="board" width="630" height="630"></canvas>
+            <div id="banner" hidden>
+              <div class="card">
+                <div class="title"></div>
+                <div class="sub"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -44,6 +47,15 @@
                 <option value="difficile">Difficile</option>
               </select>
             </label>
+          </section>
+          <section class="group">
+            <label class="check">
+              <input type="checkbox" id="live" />
+              <span>Analyse en direct</span>
+            </label>
+            <div id="eval-line">Analyse désactivée</div>
+            <div id="lines"></div>
+            <div id="engine-info"></div>
           </section>
           <div id="controls">
             <button id="new">Nouvelle partie</button>
