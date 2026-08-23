@@ -14,6 +14,19 @@ import {
 } from './core/rules'
 import { Level, chooseAction } from './core/ai'
 import { Analysis as EngineAnalysis, analyse } from './core/engine'
+import {
+  GameRecord,
+  LevelKey,
+  StorageLike,
+  applyResult,
+  emptyProfile,
+  loadHistory,
+  loadProfile,
+  saveHistory,
+  saveProfile,
+} from './platform/store'
+import { ReplayViewer } from './ui/replay'
+import { renderHistory, renderRatings } from './ui/profile'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -39,6 +52,14 @@ const evalLineEl = document.getElementById('eval-line')!
 const linesEl = document.getElementById('lines')!
 const infoEl = document.getElementById('engine-info')!
 const barWhite = document.getElementById('evalbar-white')!
+const histBody = document.getElementById('hist-body')!
+const replayCanvas = document.getElementById('replay-canvas') as HTMLCanvasElement
+const replayInfo = document.getElementById('rp-info')!
+const replayCard = document.getElementById('replay-card') as HTMLElement
+const pseudoInput = document.getElementById('pseudo-input') as HTMLInputElement
+const pseudoSave = document.getElementById('pseudo-save') as HTMLButtonElement
+const ratingsList = document.getElementById('ratings-list')!
+const resetStats = document.getElementById('reset-stats') as HTMLButtonElement
 
 const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
 const REASON: Record<WinReason, string> = {
@@ -68,6 +89,15 @@ let aiThinking = false
 let analysis: EngineAnalysis | null = null
 let liveOn = false
 
+const store: StorageLike = window.localStorage
+let profile = loadProfile(store)
+let historyRecords = loadHistory(store)
+let gameId = 1
+let recorded = false
+let movesLog: Action[] = []
+
+const replayer = new ReplayViewer(replayCanvas, replayInfo)
+
 function stonesOnBoard(color: Color): number {
   let n = 0
   for (const c of game.position.cells) if (c === color) n++
@@ -76,6 +106,10 @@ function stonesOnBoard(color: Color): number {
 
 function isAiTurn(): boolean {
   return mode === 'ai' && !game.winner && game.position.turn !== humanSide
+}
+
+function currentLevelKey(): LevelKey {
+  return mode === 'ai' ? level : 'hotseat'
 }
 
 function refresh(): void {
@@ -89,10 +123,32 @@ function refresh(): void {
 
   if (w) {
     const reason = REASON[game.winnerReason ?? 'percée']
+    let eloNote = ''
+    if (!recorded) {
+      const result: 'win' | 'loss' =
+        mode === 'ai' ? (w === humanSide ? 'win' : 'loss') : 'win'
+      const colorForRecord: Color = mode === 'ai' ? humanSide : 'black'
+      const delta = applyResult(profile, currentLevelKey(), result)
+      saveProfile(store, profile)
+      const rec: GameRecord = {
+        id: gameId,
+        ts: Date.now(),
+        level: currentLevelKey(),
+        color: colorForRecord,
+        result,
+        reason,
+        plies: pos.moveCount,
+        moves: movesLog,
+      }
+      historyRecords.unshift(rec)
+      saveHistory(store, historyRecords)
+      recorded = true
+      if (delta !== 0) eloNote = ` · ${delta > 0 ? '+' : ''}${delta} Elo`
+    }
     statusEl.innerHTML =
       `<span class="winner">${NAME[w]} gagne</span><span class="reason">${reason}</span>`
     bannerTitle.textContent = `${NAME[w]} gagne`
-    bannerSub.textContent = `${reason} · Nouvelle partie ?`
+    bannerSub.textContent = `${reason}${eloNote} · Nouvelle partie ?`
     bannerEl.hidden = false
   } else if (aiThinking) {
     statusEl.innerHTML = `L'IA réfléchit<span class="dots"></span>`
@@ -177,7 +233,6 @@ function ensureWorker(): Worker {
   return analysisWorker
 }
 
-/** Lance l'analyse infinie sur la position courante, ou stoppe le worker si non pertinent. */
 function syncAnalysis(): void {
   const shouldRun = liveOn && !game.winner && !aiThinking && !isAiTurn()
   if (!shouldRun) {
@@ -190,53 +245,6 @@ function syncAnalysis(): void {
   const w = ensureWorker()
   analysisGen++
   w.postMessage({ type: 'analyse', gen: analysisGen, pos: clonePos() })
-}
-
-function fmtCp(cp: number): string {
-  const v = cp / 100
-  return (v > 0 ? '+' : '') + v.toFixed(1)
-}
-
-const WIN_SCORE = 1_000_000
-const MATE_THRESHOLD = WIN_SCORE - 64
-
-function fmtScore(cp: number): string {
-  return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
-}
-
-function updateAnalysisPanel(): void {
-  if (!liveOn) {
-    evalLineEl.textContent = 'Analyse désactivée'
-    linesEl.innerHTML = ''
-    infoEl.textContent = ''
-    barWhite.style.height = '50%'
-    return
-  }
-  const a = analysis
-  if (!a) {
-    evalLineEl.textContent = '…'
-    linesEl.innerHTML = ''
-    infoEl.textContent = ''
-    return
-  }
-  const cp = a.scoreBlackCp
-  const mate = Math.abs(cp) >= MATE_THRESHOLD
-  evalLineEl.textContent = mate
-    ? `Percée forcée — ${cp > 0 ? 'Noir' : 'Blanc'} gagne`
-    : `Éval (Noir) : ${fmtCp(cp)}`
-  barWhite.style.height = mate
-    ? cp > 0
-      ? '0%'
-      : '100%'
-    : `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
-  linesEl.innerHTML = a.lines
-    .slice(0, 3)
-    .map((l) => {
-      const relBlack = a.turn === 'black' ? l.score : -l.score
-      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>`
-    })
-    .join('')
-  infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
 }
 
 function tryPlay(a: Action): void {
@@ -269,6 +277,7 @@ function tryPlay(a: Action): void {
     }
   }
   if (!game.play(a)) return
+  movesLog.push(a)
   if (move) anim = { ...move, start: performance.now() }
   lastMove = last
   selected = null
@@ -319,6 +328,39 @@ function drawStoneAt(x: number, y: number, color: Color, scale = 1): void {
 
 function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3)
+}
+
+function drawArrow(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: string,
+  width: number,
+): void {
+  const dx = x2 - x1
+  const dy = y2 - y1
+  const len = Math.hypot(dx, dy)
+  if (len < 1) return
+  const shrink = CELL * 0.34
+  const ex = x2 - (dx / len) * shrink
+  const ey = y2 - (dy / len) * shrink
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
+  ctx.lineWidth = width
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x1 + (dx / len) * shrink * 0.6, y1 + (dy / len) * shrink * 0.6)
+  ctx.lineTo(ex, ey)
+  ctx.stroke()
+  const head = CELL * 0.22
+  const ang = Math.atan2(dy, dx)
+  ctx.beginPath()
+  ctx.moveTo(x2 - (dx / len) * (shrink - head * 0.4), y2 - (dy / len) * (shrink - head * 0.4))
+  ctx.lineTo(ex - Math.sin(ang) * head * 0.7, ey + Math.cos(ang) * head * 0.7)
+  ctx.lineTo(ex + Math.sin(ang) * head * 0.7, ey - Math.cos(ang) * head * 0.7)
+  ctx.closePath()
+  ctx.fill()
 }
 
 function render(now: number): void {
@@ -439,45 +481,6 @@ function render(now: number): void {
   }
 }
 
-function drawArrow(
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  color: string,
-  width: number,
-): void {
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const len = Math.hypot(dx, dy)
-  if (len < 1) return
-  const shrink = CELL * 0.34
-  const ex = x2 - (dx / len) * shrink
-  const ey = y2 - (dy / len) * shrink
-  ctx.strokeStyle = color
-  ctx.fillStyle = color
-  ctx.lineWidth = width
-  ctx.lineCap = 'round'
-  ctx.beginPath()
-  ctx.moveTo(x1 + (dx / len) * shrink * 0.6, y1 + (dy / len) * shrink * 0.6)
-  ctx.lineTo(ex, ey)
-  ctx.stroke()
-  const head = CELL * 0.22
-  const ang = Math.atan2(dy, dx)
-  ctx.beginPath()
-  ctx.moveTo(x2 - (dx / len) * (shrink - head * 0.4), y2 - (dy / len) * (shrink - head * 0.4))
-  ctx.lineTo(
-    ex - Math.sin(ang) * head * 0.7,
-    ey + Math.cos(ang) * head * 0.7,
-  )
-  ctx.lineTo(
-    ex + Math.sin(ang) * head * 0.7,
-    ey - Math.cos(ang) * head * 0.7,
-  )
-  ctx.closePath()
-  ctx.fill()
-}
-
 function hitCell(e: PointerEvent): { r: number; c: number } | null {
   const rect = canvas.getBoundingClientRect()
   const x = ((e.clientX - rect.left) * LOGICAL) / rect.width
@@ -542,12 +545,16 @@ undoBtn.addEventListener('click', () => {
   if (aiThinking) return
   game.undo()
   if (mode === 'ai' && game.canUndo() && game.position.turn !== humanSide) game.undo()
+  movesLog.length = Math.min(movesLog.length, game.position.moveCount)
   resetView()
   afterMove()
 })
 
 newBtn.addEventListener('click', () => {
   game = new Game()
+  gameId++
+  recorded = false
+  movesLog = []
   resetView()
   afterMove()
 })
@@ -574,5 +581,111 @@ levelSel.addEventListener('change', () => {
   level = levelSel.value as Level
 })
 
+/* ==================== NAVIGATION & VUES ==================== */
+
+const navBtns = [...document.querySelectorAll<HTMLButtonElement>('.navbtn')]
+
+function showView(v: string): void {
+  document
+    .querySelectorAll<HTMLElement>('.view')
+    .forEach((s) => s.classList.toggle('active', s.id === `view-${v}`))
+  navBtns.forEach((b) => b.classList.toggle('active', b.dataset.view === v))
+  if (v === 'history') renderHistoryTab()
+  if (v === 'profile') {
+    pseudoInput.value = profile.pseudo
+    renderRatings(ratingsList, profile)
+  }
+}
+
+navBtns.forEach((b) => b.addEventListener('click', () => showView(b.dataset.view!)))
+
+function renderHistoryTab(): void {
+  renderHistory(histBody, historyRecords, openReplay)
+}
+
+const rpStart = document.getElementById('rp-start') as HTMLButtonElement
+const rpPrev = document.getElementById('rp-prev') as HTMLButtonElement
+const rpNext = document.getElementById('rp-next') as HTMLButtonElement
+const rpEnd = document.getElementById('rp-end') as HTMLButtonElement
+const rpAuto = document.getElementById('rp-auto') as HTMLButtonElement
+
+function openReplay(rec: GameRecord): void {
+  replayCard.hidden = false
+  replayer.load(rec)
+  replayCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+rpStart.addEventListener('click', () => replayer.go(0))
+rpEnd.addEventListener('click', () => replayer.go(replayer.total))
+rpPrev.addEventListener('click', () => replayer.step(-1))
+rpNext.addEventListener('click', () => replayer.step(1))
+rpAuto.addEventListener('click', () => replayer.toggle())
+
+pseudoSave.addEventListener('click', () => {
+  profile.pseudo = pseudoInput.value.trim() || 'Joueur'
+  saveProfile(store, profile)
+  pseudoSave.textContent = '✓'
+  setTimeout(() => (pseudoSave.textContent = 'Enregistrer'), 1200)
+})
+
+resetStats.addEventListener('click', () => {
+  if (!confirm('Effacer définitivement le profil et tout l\'historique local ?')) return
+  store.removeItem('impetus.profile.v1')
+  store.removeItem('impetus.history.v1')
+  profile = emptyProfile()
+  historyRecords = []
+  pseudoInput.value = profile.pseudo
+  renderRatings(ratingsList, profile)
+  renderHistoryTab()
+})
+
 refresh()
+showView('play')
 requestAnimationFrame(render)
+
+function fmtCp(cp: number): string {
+  const v = cp / 100
+  return (v > 0 ? '+' : '') + v.toFixed(1)
+}
+
+const WIN_SCORE = 1_000_000
+const MATE_THRESHOLD = WIN_SCORE - 64
+
+function fmtScore(cp: number): string {
+  return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
+}
+
+function updateAnalysisPanel(): void {
+  if (!liveOn) {
+    evalLineEl.textContent = 'Analyse désactivée'
+    linesEl.innerHTML = ''
+    infoEl.textContent = ''
+    barWhite.style.height = '50%'
+    return
+  }
+  const a = analysis
+  if (!a) {
+    evalLineEl.textContent = '…'
+    linesEl.innerHTML = ''
+    infoEl.textContent = ''
+    return
+  }
+  const cp = a.scoreBlackCp
+  const mate = Math.abs(cp) >= MATE_THRESHOLD
+  evalLineEl.textContent = mate
+    ? `Percée forcée — ${cp > 0 ? 'Noir' : 'Blanc'} gagne`
+    : `Éval (Noir) : ${fmtCp(cp)}`
+  barWhite.style.height = mate
+    ? cp > 0
+      ? '0%'
+      : '100%'
+    : `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
+  linesEl.innerHTML = a.lines
+    .slice(0, 3)
+    .map((l) => {
+      const relBlack = a.turn === 'black' ? l.score : -l.score
+      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>`
+    })
+    .join('')
+  infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
+}

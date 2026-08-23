@@ -58,6 +58,22 @@ Le niveau **Difficile** utilise le moteur d'analyse (négamax + table de transpo
 - Self-play : équilibre parfait Noir/Blanc au niveau Difficile via le swap (joué dans 100 % des parties)
 - La profondeur de calcul paie : ~78 % de victoire du niveau supérieur en affrontement croisé (0,35 s/coup)
 
+## Vers la plateforme
+
+Le client est structuré **local-first** : profil, Elo et historique vivent dans `src/platform/store.ts` (localStorage) derrière une interface `StorageLike`. Quand le back-end arrivera, cette couche sera remplacée par un `ApiClient` (auth + WebSocket) sans toucher au jeu ni à l'UI.
+
+Déjà en place :
+- Onglets **Jouer · Parties · Profil** (SPA sans dépendance)
+- **Elo local** par niveau d'IA (K=32, cibles 700/1200/1650) avec courbes de progression
+- **Historique persistant** (200 dernières parties) et **relecture** coup à coup ou auto-play
+- Moteur d'analyse isolé dans un Web Worker
+
+Feuille de route online :
+1. Serveur Node + WebSocket : salons, synchronisation des coups, horloges
+2. Validation **serveur** des coups (le moteur de règles est déjà un module pur réutilisable côté Node)
+3. Comptes + Elo global (le module `elo.ts` est partagé client/serveur)
+4. Matchmaking par rating, puzzles de percée, classements saisonniers
+
 ## Roadmap
 
 1. **Prototype jouable** — web local, deux joueurs sur le même écran (TypeScript + Vite, cœur de jeu pur sans dépendance rendu)

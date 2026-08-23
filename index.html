@@ -6,69 +6,136 @@
     <title>Impetus</title>
   </head>
   <body>
-    <div id="app">
-      <h1>Impetus</h1>
-      <div id="layout">
-        <div id="board-area">
-          <div id="evalbar"><div id="evalbar-white"></div></div>
-          <div id="board-stack">
-            <canvas id="board" width="630" height="630"></canvas>
-            <div id="banner" hidden>
-              <div class="card">
-                <div class="title"></div>
-                <div class="sub"></div>
+    <nav id="topnav">
+      <span class="brand">IMPETUS</span>
+      <div class="nav-links">
+        <button class="navbtn active" data-view="play">Jouer</button>
+        <button class="navbtn" data-view="history">Parties</button>
+        <button class="navbtn" data-view="profile">Profil</button>
+      </div>
+    </nav>
+
+    <div id="views">
+      <!-- ==================== JOUER ==================== -->
+      <section id="view-play" class="view active">
+        <div id="layout">
+          <div id="board-area">
+            <div id="evalbar"><div id="evalbar-white"></div></div>
+            <div id="board-stack">
+              <canvas id="board" width="630" height="630"></canvas>
+              <div id="banner" hidden>
+                <div class="card">
+                  <div class="title"></div>
+                  <div class="sub"></div>
+                </div>
               </div>
             </div>
           </div>
+          <aside id="panel">
+            <div id="status"></div>
+            <div id="reserves"></div>
+            <section class="group">
+              <label id="mode-label">
+                <span>Mode</span>
+                <select id="mode">
+                  <option value="ai" selected>Contre l'IA</option>
+                  <option value="hotseat">2 joueurs</option>
+                </select>
+              </label>
+              <label id="side-label">
+                <span>Ta couleur</span>
+                <select id="side">
+                  <option value="black" selected>Noir (commence)</option>
+                  <option value="white">Blanc</option>
+                </select>
+              </label>
+              <label id="level-label">
+                <span>Niveau de l'IA</span>
+                <select id="level">
+                  <option value="facile">Facile</option>
+                  <option value="normal" selected>Normal</option>
+                  <option value="difficile">Difficile</option>
+                </select>
+              </label>
+            </section>
+            <section class="group">
+              <label class="check">
+                <input type="checkbox" id="live" />
+                <span>Analyse en direct</span>
+              </label>
+              <div id="eval-line">Analyse désactivée</div>
+              <div id="lines"></div>
+              <div id="engine-info"></div>
+            </section>
+            <div id="controls">
+              <button id="new">Nouvelle partie</button>
+              <button id="undo" disabled>Annuler</button>
+              <button id="swap" hidden>Échanger (swap)</button>
+            </div>
+            <p class="hint">
+              Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
+              capture). Trois façons de gagner : percée, anéantissement, immobilisation.
+            </p>
+          </aside>
         </div>
-        <aside id="panel">
-          <div id="status"></div>
-          <div id="reserves"></div>
-          <section class="group">
-            <label id="mode-label">
-              <span>Mode</span>
-              <select id="mode">
-                <option value="ai" selected>Contre l'IA</option>
-                <option value="hotseat">2 joueurs</option>
-              </select>
-            </label>
-            <label id="side-label">
-              <span>Ta couleur</span>
-              <select id="side">
-                <option value="black" selected>Noir (commence)</option>
-                <option value="white">Blanc</option>
-              </select>
-            </label>
-            <label id="level-label">
-              <span>Niveau de l'IA</span>
-              <select id="level">
-                <option value="facile">Facile</option>
-                <option value="normal" selected>Normal</option>
-                <option value="difficile">Difficile</option>
-              </select>
-            </label>
-          </section>
-          <section class="group">
-            <label class="check">
-              <input type="checkbox" id="live" />
-              <span>Analyse en direct</span>
-            </label>
-            <div id="eval-line">Analyse désactivée</div>
-            <div id="lines"></div>
-            <div id="engine-info"></div>
-          </section>
-          <div id="controls">
-            <button id="new">Nouvelle partie</button>
-            <button id="undo" disabled>Annuler</button>
-            <button id="swap" hidden>Échanger (swap)</button>
+      </section>
+
+      <!-- ==================== PARTIES ==================== -->
+      <section id="view-history" class="view">
+        <div class="page">
+          <div class="card wide">
+            <h2>Historique local</h2>
+            <table id="hist-table">
+              <thead>
+                <tr>
+                  <th>Date</th><th>Niveau</th><th>Couleur</th><th>Résultat</th>
+                  <th>Fin</th><th>Coups</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="hist-body"></tbody>
+            </table>
           </div>
-          <p class="hint">
-            Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
-            capture). Trois façons de gagner : percée, anéantissement, immobilisation.
-          </p>
-        </aside>
-      </div>
+          <div class="card" id="replay-card" hidden>
+            <h2>Relecture</h2>
+            <canvas id="replay-canvas" width="468" height="468"></canvas>
+            <div id="replay-controls">
+              <button id="rp-start" title="Début">⏮</button>
+              <button id="rp-prev" title="Coup précédent">◀</button>
+              <button id="rp-auto" title="Lecture automatique">▶</button>
+              <button id="rp-next" title="Coup suivant">▶|</button>
+              <button id="rp-end" title="Fin">⏭</button>
+              <span id="rp-info"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PROFIL ==================== -->
+      <section id="view-profile" class="view">
+        <div class="page narrow">
+          <div class="card">
+            <h2>Joueur local</h2>
+            <div class="row">
+              <input id="pseudo-input" maxlength="24" placeholder="Pseudo" />
+              <button id="pseudo-save">Enregistrer</button>
+            </div>
+            <p class="hint-left">
+              Profil stocké dans ce navigateur. À l'arrivée des comptes en ligne, il sera migré
+              vers ton compte permanent.
+            </p>
+          </div>
+          <div class="card">
+            <h2>Classement Elo local</h2>
+            <div id="ratings-list"></div>
+          </div>
+          <div class="card">
+            <h2>Données</h2>
+            <button id="reset-stats" class="danger">Effacer profil et historique</button>
+          </div>
+        </div>
+      </section>
     </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
