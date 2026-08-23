@@ -1,10 +1,11 @@
 import { LEVEL_RATING, type GameRecord, type Profile, type RankedLevel } from '../platform/store'
 
-const LEVEL_LABEL: Record<RankedLevel | 'hotseat', string> = {
+const LEVEL_LABEL: Record<RankedLevel | 'hotseat' | 'online', string> = {
   facile: 'Facile',
   normal: 'Normal',
   difficile: 'Difficile',
   hotseat: 'Local 2P',
+  online: 'En ligne',
 }
 
 export function renderRatings(container: HTMLElement, p: Profile): void {

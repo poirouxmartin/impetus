@@ -40,6 +40,7 @@
                 <select id="mode">
                   <option value="ai" selected>Contre l'IA</option>
                   <option value="hotseat">2 joueurs</option>
+                  <option value="online">En ligne</option>
                 </select>
               </label>
               <label id="side-label">
@@ -66,6 +67,15 @@
               <div id="eval-line">Analyse désactivée</div>
               <div id="lines"></div>
               <div id="engine-info"></div>
+            </section>
+            <section class="group" id="online-group" hidden>
+              <div id="net-status">Non connecté</div>
+              <div class="row">
+                <input id="room-code" maxlength="4" placeholder="CODE" style="text-transform:uppercase" />
+                <button id="room-join">Rejoindre</button>
+              </div>
+              <button id="room-create">Créer un salon</button>
+              <button id="resign" class="danger" hidden>Abandonner</button>
             </section>
             <div id="controls">
               <button id="new">Nouvelle partie</button>

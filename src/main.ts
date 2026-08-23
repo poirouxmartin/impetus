@@ -27,6 +27,7 @@ import {
 } from './platform/store'
 import { ReplayViewer } from './ui/replay'
 import { renderHistory, renderRatings } from './ui/profile'
+import { connectNet, type NetClient, type ServerMsg } from './net/client'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -60,6 +61,12 @@ const pseudoInput = document.getElementById('pseudo-input') as HTMLInputElement
 const pseudoSave = document.getElementById('pseudo-save') as HTMLButtonElement
 const ratingsList = document.getElementById('ratings-list')!
 const resetStats = document.getElementById('reset-stats') as HTMLButtonElement
+const onlineGroup = document.getElementById('online-group') as HTMLElement
+const netStatusEl = document.getElementById('net-status')!
+const roomCodeInput = document.getElementById('room-code') as HTMLInputElement
+const roomCreate = document.getElementById('room-create') as HTMLButtonElement
+const roomJoin = document.getElementById('room-join') as HTMLButtonElement
+const resignBtn = document.getElementById('resign') as HTMLButtonElement
 
 const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
 const REASON: Record<WinReason, string> = {
@@ -82,12 +89,14 @@ let dests = new Map<Dir, Destination>()
 let places: Set<number> = new Set()
 let anim: Anim | null = null
 let lastMove: { from: [number, number] | null; to: [number, number] } | null = null
-let mode: 'ai' | 'hotseat' = 'ai'
+let mode: 'ai' | 'hotseat' | 'online' = 'ai'
 let humanSide: Color = 'black'
 let level: Level = 'normal'
 let aiThinking = false
 let analysis: EngineAnalysis | null = null
 let liveOn = false
+let online: { net: NetClient; code: string; color: Color; oppName: string } | null = null
+let currentNet: NetClient | null = null
 
 const store: StorageLike = window.localStorage
 let profile = loadProfile(store)
@@ -109,7 +118,110 @@ function isAiTurn(): boolean {
 }
 
 function currentLevelKey(): LevelKey {
+  if (mode === 'online') return 'online'
   return mode === 'ai' ? level : 'hotseat'
+}
+
+function displayName(color: Color): string {
+  if (mode === 'online' && online) {
+    return `${NAME[color]} (${color === online.color ? 'toi' : online.oppName || 'adversaire'})`
+  }
+  return NAME[color]
+}
+
+function netStatus(text: string): void {
+  netStatusEl.textContent = text
+}
+
+const NET_PORT = 8787
+
+function netUrl(): string {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${location.hostname}:${NET_PORT}`
+}
+
+function canLocalPlay(): boolean {
+  if (anim || aiThinking || game.winner) return false
+  if (mode === 'ai') return !isAiTurn()
+  if (mode === 'online') return !!online && game.position.turn === online.color
+  return true
+}
+
+function submitAction(a: Action): void {
+  if (mode === 'online' && online) {
+    online.net.send({ type: 'move', action: a })
+    return
+  }
+  tryPlay(a)
+}
+
+function handleNet(msg: ServerMsg): void {
+  switch (msg.type) {
+    case 'joined':
+      if (!currentNet) return
+      online = { net: currentNet, code: msg.code, color: msg.color, oppName: msg.oppName }
+      humanSide = msg.color
+      game = new Game()
+      movesLog = []
+      recorded = false
+      resetView()
+      refresh()
+      netStatus(
+        online.oppName
+          ? `Salon ${msg.code} · adversaire : ${online.oppName}`
+          : `Salon ${msg.code} — en attente d'un adversaire…`,
+      )
+      break
+    case 'oppJoined':
+      if (online) online.oppName = msg.name
+      netStatus(`${msg.name} a rejoint la partie`)
+      refresh()
+      break
+    case 'move':
+    case 'ack':
+      tryPlay(msg.action)
+      break
+    case 'gameover':
+      game.winner = msg.winner
+      game.winnerReason = msg.reason as WinReason
+      refresh()
+      break
+    case 'opponentLeft':
+      netStatus('Adversaire déconnecté')
+      if (!game.winner) {
+        bannerTitle.textContent = 'Partie interrompue'
+        bannerSub.textContent = "L'adversaire s'est déconnecté"
+        bannerEl.hidden = false
+      }
+      break
+    case 'error':
+      netStatus(`⚠ ${msg.message}`)
+      break
+    default:
+      break
+  }
+}
+
+function openNet(): void {
+  if (online) {
+    online.net.close()
+    online = null
+  } else if (currentNet) {
+    currentNet.close()
+  }
+  currentNet = connectNet(netUrl(), handleNet, () => {}, () => {
+    if (online && !game.winner) {
+      online = null
+      netStatus('Connexion perdue')
+    }
+  })
+}
+
+function leaveOnline(): void {
+  if (online) online.net.close()
+  else currentNet?.close()
+  online = null
+  currentNet = null
 }
 
 function refresh(): void {
@@ -119,10 +231,10 @@ function refresh(): void {
 
   sideLabel.hidden = levelLabel.hidden = mode !== 'ai'
   swapBtn.hidden = !(game.swapAvailable() && (mode === 'hotseat' || pos.turn === humanSide))
-  undoBtn.disabled = !game.canUndo() || aiThinking
+  undoBtn.disabled = !game.canUndo() || aiThinking || mode === 'online'
 
   if (w) {
-    const reason = REASON[game.winnerReason ?? 'percée']
+    const reasonText = (game.winnerReason && REASON[game.winnerReason]) || game.winnerReason || 'victoire'
     let eloNote = ''
     if (!recorded) {
       const result: 'win' | 'loss' =
@@ -136,7 +248,7 @@ function refresh(): void {
         level: currentLevelKey(),
         color: colorForRecord,
         result,
-        reason,
+        reason: reasonText,
         plies: pos.moveCount,
         moves: movesLog,
       }
@@ -146,17 +258,23 @@ function refresh(): void {
       if (delta !== 0) eloNote = ` · ${delta > 0 ? '+' : ''}${delta} Elo`
     }
     statusEl.innerHTML =
-      `<span class="winner">${NAME[w]} gagne</span><span class="reason">${reason}</span>`
-    bannerTitle.textContent = `${NAME[w]} gagne`
-    bannerSub.textContent = `${reason}${eloNote} · Nouvelle partie ?`
+      `<span class="winner">${displayName(w)} gagne</span><span class="reason"> — ${reasonText}</span>`
+    bannerTitle.textContent = `${displayName(w)} gagne`
+    bannerSub.textContent = `${reasonText}${eloNote} · Nouvelle partie ?`
     bannerEl.hidden = false
   } else if (aiThinking) {
     statusEl.innerHTML = `L'IA réfléchit<span class="dots"></span>`
     bannerEl.hidden = true
   } else {
-    statusEl.textContent = `Tour : ${NAME[pos.turn]}`
+    statusEl.textContent =
+      mode === 'online' && online
+        ? `Toi : ${displayName(online.color)} · Trait : ${displayName(pos.turn)}`
+        : `Tour : ${NAME[pos.turn]}`
     bannerEl.hidden = true
   }
+
+  resignBtn.hidden = !(mode === 'online' && online && !w)
+  onlineGroup.hidden = mode !== 'online'
 
   reservesEl.innerHTML = pipRow('black') + pipRow('white')
 }
@@ -492,7 +610,7 @@ function hitCell(e: PointerEvent): { r: number; c: number } | null {
 }
 
 canvas.addEventListener('pointerdown', (e) => {
-  if (aiThinking || anim || game.winner || isAiTurn()) return
+  if (!canLocalPlay()) return
   const cell = hitCell(e)
   if (!cell) return
   const i = idx(cell.r, cell.c)
@@ -515,14 +633,14 @@ canvas.addEventListener('pointerdown', (e) => {
   if (selected !== null) {
     for (const [dir, d] of dests) {
       if (d.row === cell.r && d.col === cell.c) {
-        tryPlay({ kind: 'slide', row: Math.floor(selected / SIZE), col: selected % SIZE, dir })
+        submitAction({ kind: 'slide', row: Math.floor(selected / SIZE), col: selected % SIZE, dir })
         return
       }
     }
   }
 
   if (places.has(i)) {
-    tryPlay({ kind: 'place', row: cell.r, col: cell.c })
+    submitAction({ kind: 'place', row: cell.r, col: cell.c })
     return
   }
 
@@ -531,7 +649,7 @@ canvas.addEventListener('pointerdown', (e) => {
 })
 
 swapBtn.addEventListener('click', () => {
-  if (!aiThinking) tryPlay({ kind: 'swap' })
+  if (canLocalPlay()) submitAction({ kind: 'swap' })
 })
 
 liveCb.addEventListener('change', () => {
@@ -542,7 +660,7 @@ liveCb.addEventListener('change', () => {
 })
 
 undoBtn.addEventListener('click', () => {
-  if (aiThinking) return
+  if (aiThinking || mode === 'online') return
   game.undo()
   if (mode === 'ai' && game.canUndo() && game.position.turn !== humanSide) game.undo()
   movesLog.length = Math.min(movesLog.length, game.position.moveCount)
@@ -551,6 +669,10 @@ undoBtn.addEventListener('click', () => {
 })
 
 newBtn.addEventListener('click', () => {
+  if (mode === 'online') {
+    netStatus('Utilise « Abandonner » pour quitter la partie en ligne.')
+    return
+  }
   game = new Game()
   gameId++
   recorded = false
@@ -560,25 +682,63 @@ newBtn.addEventListener('click', () => {
 })
 
 modeSel.addEventListener('change', () => {
-  if (aiThinking) {
+  const prev = mode
+  mode = modeSel.value as 'ai' | 'hotseat' | 'online'
+  onlineGroup.hidden = mode !== 'online'
+  if (prev === 'online' && mode !== 'online') leaveOnline()
+  if (mode === 'online') {
+    game = new Game()
+    movesLog = []
+    recorded = false
+    resetView()
+    netStatus('Crée un salon ou rejoins-en un avec son code.')
+  } else if (aiThinking) {
     modeSel.value = mode
-    return
+    aiThinking = false
   }
-  mode = modeSel.value as 'ai' | 'hotseat'
   afterMove()
 })
 
+roomCreate.addEventListener('click', () => {
+  openNet()
+  currentNet!.send({ type: 'create', name: profile.pseudo })
+  netStatus('Connexion…')
+})
+
+roomJoin.addEventListener('click', () => {
+  const code = roomCodeInput.value.trim().toUpperCase()
+  if (code.length !== 4) {
+    netStatus('Le code du salon fait 4 caractères.')
+    return
+  }
+  openNet()
+  currentNet!.send({ type: 'join', code, name: profile.pseudo })
+  netStatus(`Connexion au salon ${code}…`)
+})
+
+roomCodeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') roomJoin.click()
+})
+
+resignBtn.addEventListener('click', () => {
+  if (mode === 'online' && online) online.net.send({ type: 'resign' })
+})
+
+levelSel.addEventListener('change', () => {
+  level = levelSel.value as Level
+})
+
 sideSel.addEventListener('change', () => {
+  if (mode === 'online') {
+    sideSel.value = humanSide
+    return
+  }
   if (aiThinking) {
     sideSel.value = humanSide
     return
   }
   humanSide = sideSel.value as Color
   afterMove()
-})
-
-levelSel.addEventListener('change', () => {
-  level = levelSel.value as Level
 })
 
 /* ==================== NAVIGATION & VUES ==================== */

@@ -38,19 +38,20 @@ describe('chooseAction', () => {
     }
   })
 
-  it('évite les glisses qui se font capturer', () => {
+  it('élimine le coureur adverse avant sa percée', () => {
+    // Blanc (2,4) est à 2 cases de la rangée 0 avec couloir ouvert : si Noir ne le
+    // capture pas immédiatement, Blanc gagne au coup suivant. Toute autre option perd.
     const pos = {
       ...initialState(),
-      cells: board({ 1: '.w.......', 4: '....b....' }),
+      cells: board({ 2: '....w....', 4: '....b....' }),
       reserves: { black: 5, white: 5 },
       turn: 'black' as const,
       moveCount: 12,
     }
-    const action = chooseAction(pos, 'difficile', legalActions(pos))
-    expect(action).not.toBeNull()
-    if (action!.kind === 'slide') {
-      expect(['up', 'left']).not.toContain(action!.dir)
-    }
+    const slide = asSlide(chooseAction(pos, 'difficile', legalActions(pos)))
+    expect(slide.dir).toBe('up')
+    const dest = slideDestination(pos.cells, slide.row, slide.col, slide.dir, 'black')
+    expect(dest?.capture).toBe(true)
   })
 
   it('choisit la capture disponible', () => {

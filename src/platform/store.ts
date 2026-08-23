@@ -2,7 +2,7 @@ import type { Action, Color } from '../core/rules'
 import { updateRating } from '../core/elo'
 
 export type RankedLevel = 'facile' | 'normal' | 'difficile'
-export type LevelKey = RankedLevel | 'hotseat'
+export type LevelKey = RankedLevel | 'hotseat' | 'online'
 
 export const LEVEL_RATING: Record<RankedLevel, number> = {
   facile: 700,
