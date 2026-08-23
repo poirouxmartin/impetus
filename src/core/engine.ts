@@ -494,60 +494,103 @@ export interface Analysis {
   turn: Color
 }
 
-export function analyse(pos: Position, budgetMs: number): Analysis | null {
-  const st = fromPosition(pos)
-  tt = new Map()
-  for (const k of killers) {
-    k[0] = null
-    k[1] = null
+const STEP_CAP_MS = 3000
+const MAX_DEPTH = 40
+
+export class Analyzer {
+  private st: St
+  private rootTurn: Color
+  private rootMoves: Move[]
+  private scored: { m: Move; s: number }[] = []
+  private depth = 0
+  private cumNodes = 0
+  private cumMs = 0
+  private store = new Map<number, TTEntry>()
+
+  constructor(pos: Position) {
+    this.st = fromPosition(pos)
+    this.rootTurn = pos.turn
+    this.rootMoves = []
+    genMoves(this.st, this.rootMoves, false)
+    this.scored = this.rootMoves.map((m) => ({ m, s: -Infinity }))
+    for (const k of killers) {
+      k[0] = null
+      k[1] = null
+    }
+    history.fill(0)
   }
-  history.fill(0)
-  nodes = 0
-  deadline = Date.now() + budgetMs
-  const start = Date.now()
 
-  const rootMoves: Move[] = []
-  genMoves(st, rootMoves, false)
-  if (rootMoves.length === 0) return null
+  get exhausted(): boolean {
+    return this.rootMoves.length === 0
+  }
 
-  const rootMe = st.turn
-  let scored: { m: Move; s: number }[] = rootMoves.map((m) => ({ m, s: -Infinity }))
-  let completedDepth = 0
-
-  try {
-    for (let d = 1; d <= 40; d++) {
+  /** Recherche le palier de profondeur suivant (borné à STEP_CAP_MS pour rester stoppable). */
+  step(): Analysis | null {
+    if (this.exhausted || this.depth >= MAX_DEPTH) return this.build()
+    tt = this.store
+    nodes = 0
+    deadline = Date.now() + STEP_CAP_MS
+    const t0 = Date.now()
+    try {
       const cur: { m: Move; s: number }[] = []
       let alpha = -Infinity
-      for (const { m } of scored) {
-        const u = applyMove(st, m)
-        const sc = isWinAfter(st, m, u, rootMe) ? WIN : -search(st, d - 1, -Infinity, -alpha, 1)
-        unmakeMove(st, m, u)
+      const me = this.st.turn
+      for (const { m } of this.scored) {
+        const u = applyMove(this.st, m)
+        const sc = isWinAfter(this.st, m, u, me)
+          ? WIN
+          : -search(this.st, this.depth, -Infinity, -alpha, 1)
+        unmakeMove(this.st, m, u)
         cur.push({ m, s: sc })
         if (sc > alpha) alpha = sc
       }
       cur.sort((a, b) => b.s - a.s)
-      scored = cur
-      completedDepth = d
-      if (scored[0].s >= WIN - MAX_PLY) break
+      this.scored = cur
+      this.depth++
+    } catch (err) {
+      if (!(err instanceof TimeoutErr)) throw err
     }
-  } catch (err) {
-    if (!(err instanceof TimeoutErr)) throw err
+    this.cumNodes += nodes
+    this.cumMs += Date.now() - t0
+    return this.build()
   }
 
-  const lines: AnalysisLine[] = scored.map(({ m, s }) => {
-    const action = moveToAction(m)
-    return { action, notation: notation(action), score: s }
-  })
-  const best = lines[0] ?? null
-  return {
-    lines,
-    best,
-    scoreBlackCp: pos.turn === 'black' ? (best?.score ?? 0) : -(best?.score ?? 0),
-    depth: completedDepth,
-    nodes,
-    ms: Date.now() - start,
-    turn: pos.turn,
+  private build(): Analysis {
+    const lines: AnalysisLine[] = this.scored.map(({ m, s }) => {
+      const action = moveToAction(m)
+      return { action, notation: notation(action), score: s }
+    })
+    const best = lines[0] ?? null
+    return {
+      lines,
+      best,
+      scoreBlackCp:
+        this.rootTurn === 'black' ? (best?.score ?? 0) : -(best?.score ?? 0),
+      depth: this.depth,
+      nodes: this.cumNodes,
+      ms: this.cumMs,
+      turn: this.rootTurn,
+    }
   }
+}
+
+export function analyse(pos: Position, budgetMs: number): Analysis | null {
+  const az = new Analyzer(pos)
+  if (az.exhausted) return null
+  const end = Date.now() + budgetMs
+  let out = az.step()
+  while (
+    out !== null &&
+    Date.now() < end &&
+    out.depth < MAX_DEPTH &&
+    out.best !== null &&
+    Math.abs(out.best.score) < WIN - MAX_PLY
+  ) {
+    const prevDepth = out.depth
+    out = az.step()
+    if (out && out.depth === prevDepth) break
+  }
+  return out
 }
 
 export function engineActions(pos: Position): Action[] {

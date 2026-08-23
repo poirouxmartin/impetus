@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Action, Color, SIZE, applyAction, initialState, legalActions } from './rules'
-import { analyse, engineActions, notation } from './engine'
+import { analyse, engineActions, Analyzer, notation } from './engine'
 
 const WIN = 1_000_000
 
@@ -61,5 +61,14 @@ describe('moteur d analyse', () => {
     expect(a!.nodes).toBeGreaterThan(500)
     expect(a!.depth).toBeGreaterThanOrEqual(1)
     expect(Math.abs(a!.scoreBlackCp)).toBeLessThan(WIN / 2)
+  })
+
+  it('les paliers de l Analyzer progressent', () => {
+    const az = new Analyzer(initialState())
+    const a1 = az.step()
+    const a2 = az.step()
+    expect(a1).not.toBeNull()
+    expect(a2).not.toBeNull()
+    expect(a2!.depth).toBe((a1?.depth ?? 0) + 1)
   })
 })

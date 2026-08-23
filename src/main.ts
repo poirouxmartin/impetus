@@ -147,12 +147,49 @@ function afterMove(): void {
     scheduleAi()
     return
   }
-  if (liveOn && !game.winner) runAnalysis()
+  syncAnalysis()
 }
 
-function runAnalysis(): void {
-  analysis = analyse(game.position, 550)
-  updateAnalysisPanel()
+let analysisWorker: Worker | null = null
+let analysisGen = 0
+
+function clonePos(): typeof game.position {
+  return {
+    ...game.position,
+    cells: [...game.position.cells],
+    reserves: { ...game.position.reserves },
+  }
+}
+
+function ensureWorker(): Worker {
+  if (!analysisWorker) {
+    analysisWorker = new Worker(new URL('./core/analysis.worker.ts', import.meta.url), {
+      type: 'module',
+    })
+    analysisWorker.onmessage = (e) => {
+      const msg = e.data as { type: string; gen?: number; analysis?: EngineAnalysis }
+      if (msg.type === 'progress' && msg.gen === analysisGen && msg.analysis) {
+        analysis = msg.analysis
+        updateAnalysisPanel()
+      }
+    }
+  }
+  return analysisWorker
+}
+
+/** Lance l'analyse infinie sur la position courante, ou stoppe le worker si non pertinent. */
+function syncAnalysis(): void {
+  const shouldRun = liveOn && !game.winner && !aiThinking && !isAiTurn()
+  if (!shouldRun) {
+    if (analysisWorker) {
+      analysisGen++
+      analysisWorker.postMessage({ type: 'stop', gen: analysisGen })
+    }
+    return
+  }
+  const w = ensureWorker()
+  analysisGen++
+  w.postMessage({ type: 'analyse', gen: analysisGen, pos: clonePos() })
 }
 
 function fmtCp(cp: number): string {
@@ -484,7 +521,7 @@ liveCb.addEventListener('change', () => {
   liveOn = liveCb.checked
   analysis = null
   updateAnalysisPanel()
-  if (liveOn && !game.winner && !aiThinking && !isAiTurn()) runAnalysis()
+  syncAnalysis()
 })
 
 undoBtn.addEventListener('click', () => {
