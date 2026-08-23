@@ -9,6 +9,7 @@ import {
   START_RESERVE,
   WinReason,
   idx,
+  other,
   slideDestination,
 } from './core/rules'
 import { Level, chooseAction } from './core/ai'
@@ -139,6 +140,19 @@ function tryPlay(a: Action): void {
     last = { from: [a.row, a.col], to: [d.row, d.col] }
   } else if (a.kind === 'place') {
     last = { from: null, to: [a.row, a.col] }
+  } else if (a.kind === 'swap') {
+    const originIdx = game.position.cells.findIndex((c) => c !== null)
+    if (originIdx >= 0) {
+      const or = Math.floor(originIdx / SIZE)
+      const oc = originIdx % SIZE
+      move = {
+        color: other(game.position.turn),
+        from: [or, oc],
+        to: [SIZE - 1 - or, SIZE - 1 - oc],
+        captured: null,
+      }
+      last = { from: [or, oc], to: move.to }
+    }
   }
   if (!game.play(a)) return
   if (move) anim = { ...move, start: performance.now() }

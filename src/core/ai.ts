@@ -89,13 +89,17 @@ export function chooseAction(pos: Position, level: Level, allowed: Action[]): Ac
   const wins = allowed.filter((a) => isImmediateWin(pos, a))
   if (wins.length > 0) return pickRandom(wins)
 
+  const options =
+    level === 'difficile' ? allowed : allowed.filter((a) => a.kind !== 'swap')
+  const candidates = options.length > 0 ? options : allowed
+
   const me = pos.turn
   if (level === 'facile') {
-    const captures = allowed.filter(
+    const captures = candidates.filter(
       (a) =>
         a.kind === 'slide' && slideDestination(pos.cells, a.row, a.col, a.dir, me)?.capture,
     )
-    const pool = captures.length > 0 && Math.random() < 0.5 ? captures : allowed
+    const pool = captures.length > 0 && Math.random() < 0.5 ? captures : candidates
     return pickRandom(pool)
   }
 
@@ -103,7 +107,7 @@ export function chooseAction(pos: Position, level: Level, allowed: Action[]): Ac
   const maxDepth = level === 'difficile' ? 8 : 5
   const deadline = Date.now() + budget
 
-  let ranked = allowed
+  let ranked = candidates
     .map((action) => ({ action, order: moveOrder(pos, action) }))
     .sort((x, y) => y.order - x.order)
     .map((m) => m.action)

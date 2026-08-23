@@ -3,6 +3,7 @@ import {
   Action,
   Color,
   SIZE,
+  applyAction,
   initialState,
   legalActions,
   slideDestination,
@@ -68,6 +69,13 @@ describe('chooseAction', () => {
 
   it('retourne null sans coup disponible', () => {
     expect(chooseAction(initialState(), 'normal', [])).toBeNull()
+  })
+
+  it('normal ne joue pas le swap quand des alternatives existent', () => {
+    const pos = applyAction(initialState(), { kind: 'place', row: 0, col: 4 })
+    const allowed = legalActions(pos)
+    expect(allowed.some((a) => a.kind === 'swap')).toBe(true)
+    expect(chooseAction(pos, 'normal', allowed)?.kind).not.toBe('swap')
   })
 
   it('facile reste dans les coups légaux', () => {
