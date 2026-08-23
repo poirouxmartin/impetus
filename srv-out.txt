@@ -1,0 +1,6 @@
+Impetus serveur : http://localhost:8787  (WS même port) — HORLOGE RAPIDE (test)
+[rematch] me= 0 result= true winner= null
+[rematch] flags= [ true, false ]
+[rematch] me= 1 result= true winner= null
+[rematch] flags= [ true, true ]
+[rematch] envoyé

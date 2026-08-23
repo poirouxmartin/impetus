@@ -7,18 +7,34 @@ export interface NetPoint {
   moveCount: number
   winner?: string | null
   winnerReason?: string | null
+  clock?: { black: number; white: number; ts: number } | null
+}
+
+export interface ClockSnap {
+  black: number
+  white: number
+  ts: number
 }
 
 export type ServerMsg =
-  | { type: 'joined'; code: string; color: Color; state: NetPoint; oppName: string }
+  | {
+      type: 'joined'
+      code: string
+      color: Color
+      state: NetPoint
+      oppName: string
+    }
   | { type: 'oppJoined'; name: string }
   | { type: 'start' }
-  | { type: 'move'; action: Action }
-  | { type: 'ack'; action: Action }
-  | { type: 'state' }
+  | { type: 'move'; action: Action; clock?: ClockSnap | null }
+  | { type: 'ack'; action: Action; clock?: ClockSnap | null }
+  | { type: 'state'; turn?: Color; clock?: ClockSnap | null }
   | { type: 'gameover'; winner: Color; reason: string }
   | { type: 'opponentLeft' }
   | { type: 'error'; message: string }
+  | { type: 'queued'; count?: number }
+  | { type: 'queue-left' }
+  | { type: 'rematch-wait' }
 
 export interface NetClient {
   send(msg: unknown): void

@@ -67,6 +67,12 @@ const roomCodeInput = document.getElementById('room-code') as HTMLInputElement
 const roomCreate = document.getElementById('room-create') as HTMLButtonElement
 const roomJoin = document.getElementById('room-join') as HTMLButtonElement
 const resignBtn = document.getElementById('resign') as HTMLButtonElement
+const clkBlack = document.getElementById('clk-black') as HTMLElement
+const clkWhite = document.getElementById('clk-white') as HTMLElement
+const clocksEl = document.getElementById('clocks') as HTMLElement
+const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
+const quickBtn = document.getElementById('quick') as HTMLButtonElement
+const rematchBtn = document.getElementById('rematch') as HTMLButtonElement
 
 const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
 const REASON: Record<WinReason, string> = {
@@ -97,6 +103,8 @@ let analysis: EngineAnalysis | null = null
 let liveOn = false
 let online: { net: NetClient; code: string; color: Color; oppName: string } | null = null
 let currentNet: NetClient | null = null
+let clockSnap: { black: number; white: number; ts: number; turn: Color; running: boolean } | null = null
+let inQueue = false
 
 const store: StorageLike = window.localStorage
 let profile = loadProfile(store)
@@ -165,6 +173,9 @@ function handleNet(msg: ServerMsg): void {
       movesLog = []
       recorded = false
       resetView()
+      if (msg.state.clock) {
+        clockSnap = { ...msg.state.clock, turn: msg.state.turn, running: !game.winner }
+      } else clockSnap = null
       refresh()
       netStatus(
         online.oppName
@@ -172,18 +183,38 @@ function handleNet(msg: ServerMsg): void {
           : `Salon ${msg.code} — en attente d'un adversaire…`,
       )
       break
-    case 'oppJoined':
-      if (online) online.oppName = msg.name
-      netStatus(`${msg.name} a rejoint la partie`)
-      refresh()
-      break
     case 'move':
     case 'ack':
       tryPlay(msg.action)
+      if (msg.clock) clockSnap = { ...msg.clock, turn: game.position.turn, running: !game.winner }
+      break
+    case 'state':
+      if (msg.clock && !game.winner) {
+        clockSnap = { ...msg.clock, turn: game.position.turn, running: true }
+      }
       break
     case 'gameover':
       game.winner = msg.winner
       game.winnerReason = msg.reason as WinReason
+      if (clockSnap) clockSnap.running = false
+      refresh()
+      break
+    case 'queued':
+      inQueue = true
+      quickBtn.textContent = '✕ Annuler la recherche'
+      netStatus(`Recherche d'un adversaire… (${msg.count ?? 1} en file)`)
+      break
+    case 'queue-left':
+      inQueue = false
+      quickBtn.textContent = '⚡ Partie rapide'
+      netStatus('Recherche annulée.')
+      break
+    case 'rematch-wait':
+      netStatus('Revanche proposée — en attente de l’adversaire…')
+      break
+    case 'oppJoined':
+      if (online) online.oppName = msg.name
+      netStatus(`${msg.name} a rejoint la partie`)
       refresh()
       break
     case 'opponentLeft':
@@ -274,10 +305,36 @@ function refresh(): void {
   }
 
   resignBtn.hidden = !(mode === 'online' && online && !w)
-  onlineGroup.hidden = mode !== 'online'
+  rematchBtn.hidden = !(mode === 'online' && online && !!w)
+  clocksEl.hidden = mode !== 'online' || !clockSnap
 
   reservesEl.innerHTML = pipRow('black') + pipRow('white')
 }
+
+function fmtClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
+function renderClocks(): void {
+  if (mode !== 'online' || !clockSnap) return
+  const now = Date.now()
+  const live = (color: Color): number => {
+    const base = color === 'black' ? clockSnap!.black : clockSnap!.white
+    const running = clockSnap!.running && clockSnap!.turn === color
+    return Math.max(0, base - (running ? now - clockSnap!.ts : 0))
+  }
+  const b = live('black')
+  const w = live('white')
+  clkBlack.textContent = fmtClock(b)
+  clkWhite.textContent = fmtClock(w)
+  clkBlack.classList.toggle('active', clockSnap.turn === 'black' && clockSnap.running)
+  clkWhite.classList.toggle('active', clockSnap.turn === 'white' && clockSnap.running)
+  clkBlack.classList.toggle('low', b < 20000)
+  clkWhite.classList.toggle('low', w < 20000)
+}
+
+setInterval(renderClocks, 250)
 
 function pipRow(color: Color): string {
   const reserve = game.position.reserves[color]
@@ -701,8 +758,24 @@ modeSel.addEventListener('change', () => {
 
 roomCreate.addEventListener('click', () => {
   openNet()
-  currentNet!.send({ type: 'create', name: profile.pseudo })
+  const net = currentNet!
+  net.send({ type: 'create', name: profile.pseudo, clock: clockSel.value })
   netStatus('Connexion…')
+})
+
+quickBtn.addEventListener('click', () => {
+  openNet()
+  const net = currentNet!
+  if (inQueue) {
+    net.send({ type: 'cancel-quick' })
+    return
+  }
+  net.send({ type: 'quick', name: profile.pseudo })
+  clockSel.value = '5+0'
+})
+
+rematchBtn.addEventListener('click', () => {
+  if (mode === 'online' && online) online.net.send({ type: 'rematch' })
 })
 
 roomJoin.addEventListener('click', () => {
@@ -849,3 +922,4 @@ function updateAnalysisPanel(): void {
     .join('')
   infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
 }
+

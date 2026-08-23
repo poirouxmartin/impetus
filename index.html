@@ -32,7 +32,11 @@
             </div>
           </div>
           <aside id="panel">
-            <div id="status"></div>
+            <div id="clocks" hidden>
+            <div id="clk-white" class="clk">–:––</div>
+            <div id="clk-black" class="clk">–:––</div>
+          </div>
+          <div id="status"></div>
             <div id="reserves"></div>
             <section class="group">
               <label id="mode-label">
@@ -69,12 +73,22 @@
               <div id="engine-info"></div>
             </section>
             <section class="group" id="online-group" hidden>
+              <label class="check">
+                <span>Cadence</span>
+                <select id="clock-sel">
+                  <option value="3+2" selected>3 min + 2 s</option>
+                  <option value="5+0">5 min</option>
+                  <option value="none">Sans horloge</option>
+                </select>
+              </label>
+              <button id="quick" class="quick">⚡ Partie rapide</button>
               <div id="net-status">Non connecté</div>
               <div class="row">
                 <input id="room-code" maxlength="4" placeholder="CODE" style="text-transform:uppercase" />
                 <button id="room-join">Rejoindre</button>
               </div>
               <button id="room-create">Créer un salon</button>
+              <button id="rematch" hidden>Revanche</button>
               <button id="resign" class="danger" hidden>Abandonner</button>
             </section>
             <div id="controls">

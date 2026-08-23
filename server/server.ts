@@ -40,14 +40,41 @@ interface Seat {
   name: string
 }
 
+interface ClockCfg {
+  base: number
+  inc: number
+}
+
+const FAST = !!process.env.FAST_CLOCK
+
+const CLOCKS: Record<string, ClockCfg> = {
+  none: { base: 0, inc: 0 },
+  '3+2': { base: 180_000, inc: 2000 },
+  '5+0': { base: 300_000, inc: 0 },
+}
+
+function clockFromKey(key: unknown): ClockCfg | null {
+  const k = String(key ?? 'none')
+  return CLOCKS[k] ?? null
+}
+
+interface RoomClock {
+  cfg: ClockCfg
+  rem: [number, number]
+  turnStart: number
+}
+
 interface Room {
   id: string
   game: Game
   seats: [Seat, Seat]
   result?: { winner: Color; reason: string }
+  clock?: RoomClock
+  wantRematch: [boolean, boolean]
 }
 
 const rooms = new Map<string, Room>()
+const quickQueue: { ws: WebSocket; name: string }[] = []
 
 const COLORS: Color[] = ['black', 'white']
 
@@ -70,6 +97,15 @@ function send(ws: WebSocket | null, msg: unknown): void {
 }
 
 function publicState(room: Room) {
+  const now = Date.now()
+  let clock: Record<string, number | null> | null = null
+  if (room.clock) {
+    const turnIdx = COLORS.indexOf(room.game.position.turn)
+    const live = room.clock.rem.map((v, i) =>
+      i === turnIdx && !room.result && !room.game.winner ? v - (now - room.clock!.turnStart) : v,
+    )
+    clock = { black: Math.max(0, live[0]), white: Math.max(0, live[1]), ts: now }
+  }
   return {
     type: 'state',
     cells: room.game.position.cells,
@@ -78,6 +114,7 @@ function publicState(room: Room) {
     moveCount: room.game.position.moveCount,
     winner: room.result?.winner ?? room.game.winner,
     winnerReason: room.result?.reason ?? room.game.winnerReason,
+    clock,
   }
 }
 
@@ -91,9 +128,15 @@ function opponentOf(room: Room, i: number): Seat {
 
 const wss = new WebSocketServer({ server: httpServer })
 
+function locate(ws: WebSocket): { room: Room; me: number } | null {
+  for (const room of rooms.values()) {
+    const me = room.seats.findIndex((s) => s.ws === ws)
+    if (me >= 0) return { room, me }
+  }
+  return null
+}
+
 wss.on('connection', (ws) => {
-  let room: Room | null = null
-  let seatIdx = -1
 
   ws.on('message', (data) => {
     let msg: Record<string, unknown>
@@ -106,16 +149,72 @@ wss.on('connection', (ws) => {
 
     if (type === 'create') {
       const name = String(msg.name ?? 'Joueur').slice(0, 24)
-      room = { id: genCode(), game: new Game(), seats: [{ ws, name }, { ws: null, name: '' }] }
-      rooms.set(room.id, room)
-      seatIdx = 0
+      const cfg = clockFromKey(msg.clock)
+      const r: Room = {
+        id: genCode(),
+        game: new Game(),
+        seats: [
+          { ws, name },
+          { ws: null, name: '' },
+        ],
+        wantRematch: [false, false],
+      }
+      if (cfg) r.clock = { cfg, rem: [cfg.base, cfg.base], turnStart: Date.now() }
+      rooms.set(r.id, r)
       send(ws, {
         type: 'joined',
-        code: room.id,
+        code: r.id,
         color: COLORS[0],
-        state: publicState(room),
+        state: publicState(r),
         oppName: '',
       })
+      return
+    }
+
+    if (type === 'quick') {
+      const name = String(msg.name ?? 'Joueur').slice(0, 24)
+      const idxInQueue = quickQueue.findIndex((q) => q.ws === ws)
+      if (idxInQueue >= 0) {
+        quickQueue.splice(idxInQueue, 1)
+        send(ws, { type: 'queue-left' })
+        return
+      }
+      quickQueue.push({ ws, name })
+      send(ws, { type: 'queued', count: quickQueue.length })
+      while (quickQueue.length >= 2) {
+        const A = quickQueue.shift()!
+        const B = quickQueue.shift()!
+        const cfg = FAST ? { base: 600, inc: 0 } : CLOCKS['5+0']
+        const r: Room = {
+          id: genCode(),
+          game: new Game(),
+          seats: [
+            { ws: A.ws, name: A.name },
+            { ws: B.ws, name: B.name },
+          ],
+          wantRematch: [false, false],
+          clock: { cfg, rem: [cfg.base, cfg.base], turnStart: Date.now() },
+        }
+        rooms.set(r.id, r)
+        const colors: Color[] = Math.random() < 0.5 ? ['black', 'white'] : ['white', 'black']
+        ;[A, B].forEach((q, i) => {
+          send(q.ws, {
+            type: 'joined',
+            code: r.id,
+            color: colors[i],
+            state: publicState(r),
+            oppName: (i === 0 ? B : A).name,
+          })
+        })
+        broadcast(r, { type: 'start' })
+      }
+      return
+    }
+
+    if (type === 'cancel-quick') {
+      const idxInQueue = quickQueue.findIndex((q) => q.ws === ws)
+      if (idxInQueue >= 0) quickQueue.splice(idxInQueue, 1)
+      send(ws, { type: 'queue-left' })
       return
     }
 
@@ -131,31 +230,29 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'error', message: 'Salon complet' })
         return
       }
-      room = target
-      seatIdx = free
+
+
       const name = String(msg.name ?? 'Joueur').slice(0, 24)
       target.seats[free] = { ws, name }
       send(ws, {
         type: 'joined',
-        code: room.id,
+        code: target.id,
         color: COLORS[free],
-        state: publicState(room),
+        state: publicState(target),
         oppName: target.seats[1 - free].name,
       })
       send(target.seats[1 - free].ws, { type: 'oppJoined', name })
-      broadcast(room, { type: 'start' })
+      broadcast(target, { type: 'start' })
       return
     }
 
-    if (!room || seatIdx < 0) {
+    const loc = locate(ws)
+    if (!loc) {
       send(ws, { type: 'error', message: 'Tu n’es dans aucun salon' })
       return
     }
-    const me = seatIndex(room, ws)
-    if (me < 0) {
-      send(ws, { type: 'error', message: 'Siège perdu' })
-      return
-    }
+    const room = loc.room
+    const me = loc.me
     const myColor = COLORS[me]
 
     if (type === 'move') {
@@ -167,10 +264,27 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'error', message: 'Ce n’est pas ton tour' })
         return
       }
+      const meIdx = COLORS.indexOf(myColor)
+      const now = Date.now()
+      if (room.clock && !FAST) {
+        room.clock.rem[meIdx] -= now - room.clock.turnStart
+        room.clock.turnStart = now
+        if (room.clock.rem[meIdx] <= 0) {
+          room.clock.rem[meIdx] = 0
+          room.result = { winner: COLORS[1 - meIdx], reason: 'temps' }
+          broadcast(room, { type: 'gameover', winner: room.result.winner, reason: 'temps' })
+          broadcast(room, publicState(room))
+          return
+        }
+      }
       const action = msg.action as Action
       if (!room.game.play(action)) {
         send(ws, { type: 'error', message: 'Coup illégal', state: publicState(room) })
         return
+      }
+      if (room.clock) {
+        room.clock.rem[meIdx] += room.clock.cfg.inc
+        room.clock.turnStart = now
       }
       send(opponentOf(room, me).ws, { type: 'move', action })
       send(ws, { type: 'ack', action })
@@ -193,17 +307,67 @@ wss.on('connection', (ws) => {
       broadcast(room, publicState(room))
       return
     }
+
+    if (type === 'rematch') {
+      console.log('[rematch] me=', me, 'result=', !!room.result, 'winner=', room.game.winner)
+      if (!room.result && !room.game.winner) return
+      room.wantRematch[me] = true
+      console.log('[rematch] flags=', room.wantRematch)
+      if (room.wantRematch[0] && room.wantRematch[1]) {
+        room.game = new Game()
+        room.result = undefined
+        room.wantRematch = [false, false]
+        if (room.clock) {
+          room.clock.rem = [room.clock.cfg.base, room.clock.cfg.base]
+          room.clock.turnStart = Date.now()
+        }
+        const r = room
+        room.seats.forEach((s, i) => {
+          send(s.ws, {
+            type: 'joined',
+            code: r.id,
+            color: COLORS[1 - i],
+            state: publicState(r),
+            oppName: r.seats[1 - i].name,
+          })
+        })
+        broadcast(room, { type: 'start' })
+        console.log('[rematch] envoyé')
+      } else {
+        send(ws, { type: 'rematch-wait' })
+      }
+      return
+    }
   })
 
   ws.on('close', () => {
-    if (!room || seatIdx < 0) return
-    const other = opponentOf(room, seatIdx)
-    send(other.ws, { type: 'opponentLeft' })
-    if (!other.ws) rooms.delete(room.id)
-    else if (room.seats[seatIdx]) room.seats[seatIdx].ws = null
+    const qIdx = quickQueue.findIndex((q) => q.ws === ws)
+    if (qIdx >= 0) quickQueue.splice(qIdx, 1)
+    const loc = locate(ws)
+    if (!loc) return
+    const { room, me } = loc
+    room.seats[me].ws = null
+    const otherSeat = room.seats[1 - me]
+    send(otherSeat.ws, { type: 'opponentLeft' })
+    if (!otherSeat.ws) rooms.delete(room.id)
   })
 })
 
+setInterval(() => {
+  const now = Date.now()
+  for (const room of rooms.values()) {
+    if (!room.clock || room.result || room.game.winner) continue
+    if (room.seats.some((s) => !s.ws)) continue
+    const turnIdx = COLORS.indexOf(room.game.position.turn)
+    if (now - room.clock.turnStart > room.clock.rem[turnIdx]) {
+      room.clock.rem[turnIdx] = 0
+      room.result = { winner: COLORS[1 - turnIdx], reason: 'temps' }
+      broadcast(room, { type: 'gameover', winner: room.result.winner, reason: 'temps' })
+      broadcast(room, publicState(room))
+    }
+  }
+}, 400)
+
 httpServer.listen(PORT, () => {
-  console.log(`Impetus serveur : http://localhost:${PORT}  (WS même port)`)
+  console.log(`Impetus serveur : http://localhost:${PORT}  (WS même port)${FAST ? ' — HORLOGE RAPIDE (test)' : ''}`)
 })

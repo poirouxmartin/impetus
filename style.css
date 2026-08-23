@@ -565,3 +565,40 @@ button.danger {
 button.danger:hover:not(:disabled) {
   background: #33201f;
 }
+
+#clocks {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.clk {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: #1a1f27;
+  border: 1px solid #2c333d;
+  border-radius: 8px;
+  padding: 6px 18px;
+  color: #9aa0a8;
+  transition: all 0.2s;
+}
+
+.clk.active {
+  color: #e8e6e3;
+  border-color: #7ee787;
+}
+
+.clk.low {
+  color: #ff8b8b;
+  border-color: #ff8b8b;
+}
+
+.quick {
+  border-color: #3d5a3f;
+  color: #7ee787;
+}
+
+.quick:hover {
+  background: #1d2a20 !important;
+}

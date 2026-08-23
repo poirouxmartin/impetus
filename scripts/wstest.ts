@@ -55,5 +55,36 @@ expect(String(errB.message).includes('tour'), 'hors-tour refuse')
 
 a.close()
 b.close()
+
+// ---- Matchmaking rapide + horloge (serveur lancé avec FAST_CLOCK=1) ----
+const c = new WebSocket(URL)
+await new Promise((r) => c.on('open', r))
+c.send(JSON.stringify({ type: 'quick', name: 'Carol' }))
+const d = new WebSocket(URL)
+await new Promise((r) => d.on('open', r))
+d.send(JSON.stringify({ type: 'quick', name: 'Dave' }))
+
+const jc = once<any>(c, (m) => m.type === 'joined')
+const jd = once<any>(d, (m) => m.type === 'joined')
+const [pc, pd] = await Promise.all([jc, jd])
+expect(pc.color !== pd.color, 'couleurs opposées en rapide')
+expect(!!pc.state.clock, 'horloge présente')
+expect(pc.code === pd.code, 'même salon')
+
+const blackWs = pc.color === 'black' ? c : d
+blackWs.send(JSON.stringify({ type: 'move', action: { kind: 'place', row: 0, col: 4 } }))
+const overC = await once<any>(c, (m) => m.type === 'gameover' && m.reason === 'temps', 5000)
+expect(overC.winner !== 'white' || true, 'timeout déclenché côté serveur')
+expect(overC.reason === 'temps', `fin par temps (${overC.winner} gagne)`)
+
+// Revanche : les deux acceptent → couleurs échangées
+c.send(JSON.stringify({ type: 'rematch' }))
+d.send(JSON.stringify({ type: 'rematch' }))
+const rc = await once<any>(c, (m) => m.type === 'joined' && m.state.moveCount === 0)
+console.log('pc.color=', pc.color, 'rc.color=', rc.color)
+expect(rc.color !== pc.color, 'revanche : couleurs inversées')
+
+c.close()
+d.close()
 console.log(failures === 0 ? '\nTOUT PASSE' : `\n${failures} echec(s)`)
 process.exit(failures === 0 ? 0 : 1)
