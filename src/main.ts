@@ -197,6 +197,13 @@ function fmtCp(cp: number): string {
   return (v > 0 ? '+' : '') + v.toFixed(1)
 }
 
+const WIN_SCORE = 1_000_000
+const MATE_THRESHOLD = WIN_SCORE - 64
+
+function fmtScore(cp: number): string {
+  return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
+}
+
 function updateAnalysisPanel(): void {
   if (!liveOn) {
     evalLineEl.textContent = 'Analyse désactivée'
@@ -213,13 +220,20 @@ function updateAnalysisPanel(): void {
     return
   }
   const cp = a.scoreBlackCp
-  evalLineEl.textContent = `Éval (Noir) : ${fmtCp(cp)}`
-  barWhite.style.height = `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
+  const mate = Math.abs(cp) >= MATE_THRESHOLD
+  evalLineEl.textContent = mate
+    ? `Percée forcée — ${cp > 0 ? 'Noir' : 'Blanc'} gagne`
+    : `Éval (Noir) : ${fmtCp(cp)}`
+  barWhite.style.height = mate
+    ? cp > 0
+      ? '0%'
+      : '100%'
+    : `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
   linesEl.innerHTML = a.lines
     .slice(0, 3)
     .map((l) => {
       const relBlack = a.turn === 'black' ? l.score : -l.score
-      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtCp(relBlack)}</span></div>`
+      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>`
     })
     .join('')
   infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`

@@ -420,10 +420,13 @@ function search(st: St, depth: number, alpha: number, beta: number, ply: number)
   const alphaOrig = alpha
   const e = tt.get(st.key)
   if (e && e.key2 === st.key2 && e.d >= depth) {
-    if (e.f === 0) return e.s
-    if (e.f === 1 && e.s > alpha) alpha = e.s
-    else if (e.f === 2 && e.s < beta) beta = e.s
-    if (alpha >= beta) return e.s
+    let s = e.s
+    if (s > WIN - MAX_PLY) s -= ply
+    else if (s < -(WIN - MAX_PLY)) s += ply
+    if (e.f === 0) return s
+    if (e.f === 1 && s > alpha) alpha = s
+    else if (e.f === 2 && s < beta) beta = s
+    if (alpha >= beta) return s
   }
   if (depth <= 0) return quiesce(st, alpha, beta, 8)
   const moves: Move[] = []
@@ -458,8 +461,11 @@ function search(st: St, depth: number, alpha: number, beta: number, ply: number)
     }
   }
   const f: 0 | 1 | 2 = best <= alphaOrig ? 2 : best >= beta ? 1 : 0
+  let sStore = best
+  if (sStore > WIN - MAX_PLY) sStore += ply
+  else if (sStore < -(WIN - MAX_PLY)) sStore -= ply
   if (tt.size > TT_MAX) tt.clear()
-  tt.set(st.key, { key2: st.key2, d: depth, f, s: best, m: bestMove })
+  tt.set(st.key, { key2: st.key2, d: depth, f, s: sStore, m: bestMove })
   return best
 }
 
