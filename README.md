@@ -39,6 +39,22 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 - Forme exacte de l'anti-répétition (ko simple ? règle des 3 positions ?)
 - La percée est-elle trop facile contre une défense molle ? Trop dure contre une bonne défense ?
 
+## Outils
+
+| Commande | Description |
+|---|---|
+| `npm run dev` | Prototype jouable (http://localhost:5273) |
+| `npm test` | Tests moteur + IA + solveur |
+| `npm run stats` | Self-play IA vs IA (`npm run stats -- <parties> <budgetMsDifficile>`) |
+| `npm run solve` | Complexité du jeu standard + frontière de résolubilité des variantes réduites |
+
+## Chiffres mesurés (v1.1)
+
+- Arbre de jeu ≈ **10^71** · borne haute d'états ≈ **10^41** (9×9, réserve 10)
+- Solveur exhaustif maison : résout jusqu'à 7×7 réserve 2 ; échoue dès réserve 3 en 6×6 (~6,5 M nœuds / 25 s)
+- Self-play : équilibre parfait Noir/Blanc au niveau Difficile via le swap (joué dans 100 % des parties)
+- La profondeur de calcul paie : ~78 % de victoire du niveau supérieur en affrontement croisé (0,35 s/coup)
+
 ## Roadmap
 
 1. **Prototype jouable** — web local, deux joueurs sur le même écran (TypeScript + Vite, cœur de jeu pur sans dépendance rendu)
