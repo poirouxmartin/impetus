@@ -1,6 +1,6 @@
-# Glisse
+# Impetus
 
-Jeu de plateau abstrait 1v1, zéro hasard. Simple à apprendre (2 actions, 30 secondes), conçu pour une profondeur comparable au go et aux échecs. *(Nom de travail — à confirmer une fois le jeu validé.)*
+Jeu de plateau abstrait 1v1, zéro hasard. Simple à apprendre (2 actions, 30 secondes), conçu pour une profondeur comparable au go et aux échecs. *(Anciennement « Glisse » pendant la phase de conception.)*
 
 ## Pitch
 

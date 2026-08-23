@@ -1,4 +1,4 @@
-# AGENTS.md — Glisse
+# AGENTS.md — Impetus
 
 ## Description
 

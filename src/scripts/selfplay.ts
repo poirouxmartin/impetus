@@ -70,7 +70,7 @@ const budgetFor = (level: Level): number =>
   level === 'facile' ? 10 : level === 'normal' ? 150 : dBudgetMs
 
 console.log(
-  `Self-play Glisse — ${games} parties par affrontement · budget Difficile ${dBudgetMs} ms\n`,
+  `Self-play Impetus — ${games} parties par affrontement · budget Difficile ${dBudgetMs} ms\n`,
 )
 runMatchup('Facile (Noir) vs Facile (Blanc)', 'facile', 'facile', games)
 runMatchup('Normal (Noir) vs Normal (Blanc)', 'normal', 'normal', games)
