@@ -1,0 +1,77 @@
+import { Color, Game } from '../core/rules'
+import { Level, chooseAction } from '../core/ai'
+
+const MAX_PLIES = 300
+
+interface GameResult {
+  winner: Color | 'timeout'
+  reason: string
+  plies: number
+  swapUsed: boolean
+}
+
+const budgetFor = (level: Level): number =>
+  level === 'facile' ? 10 : level === 'normal' ? 150 : 350
+
+function playGame(black: Level, white: Level): GameResult {
+  const game = new Game()
+  let swapUsed = false
+  while (!game.winner && game.position.moveCount < MAX_PLIES) {
+    const level: Level = game.position.turn === 'black' ? black : white
+    const action = chooseAction(game.position, level, game.legalMoves(), budgetFor(level))
+    if (!action) break
+    if (action.kind === 'swap') swapUsed = true
+    game.play(action)
+  }
+  return {
+    winner: game.winner ?? 'timeout',
+    reason: game.winnerReason ?? 'timeout',
+    plies: game.position.moveCount,
+    swapUsed,
+  }
+}
+
+function runMatchup(name: string, black: Level, white: Level, games: number): void {
+  let blackWins = 0
+  let whiteWins = 0
+  let timeouts = 0
+  let swaps = 0
+  const reasons: Record<string, number> = {}
+  let plySum = 0
+  let plyMin = Infinity
+  let plyMax = 0
+
+  for (let i = 0; i < games; i++) {
+    const r = playGame(black, white)
+    if (r.winner === 'black') blackWins++
+    else if (r.winner === 'white') whiteWins++
+    else timeouts++
+    if (r.swapUsed) swaps++
+    reasons[r.reason] = (reasons[r.reason] ?? 0) + 1
+    plySum += r.plies
+    plyMin = Math.min(plyMin, r.plies)
+    plyMax = Math.max(plyMax, r.plies)
+    process.stdout.write(`\r${name} — partie ${i + 1}/${games}`)
+  }
+
+  const pct = (n: number): string => ((100 * n) / games).toFixed(0) + '%'
+  console.log('')
+  console.log(`== ${name} (${games} parties) ==`)
+  console.log(
+    `Noir ${blackWins} (${pct(blackWins)}) · Blanc ${whiteWins} (${pct(whiteWins)}) · non terminées ${timeouts} (${pct(timeouts)})`,
+  )
+  console.log(
+    `Longueur moyenne ${(plySum / games).toFixed(1)} plies [min ${plyMin} · max ${plyMax}] · swaps joués ${swaps}`,
+  )
+  console.log(`Fins de partie : ${JSON.stringify(reasons)}`)
+  console.log('')
+}
+
+const games = Number(process.argv[2]) || 16
+
+console.log(`Self-play Glisse — ${games} parties par affrontement\n`)
+runMatchup('Facile (Noir) vs Facile (Blanc)', 'facile', 'facile', games)
+runMatchup('Normal (Noir) vs Normal (Blanc)', 'normal', 'normal', games)
+runMatchup('Difficile (Noir) vs Difficile (Blanc)', 'difficile', 'difficile', games)
+runMatchup('Noir Difficile vs Blanc Normal', 'difficile', 'normal', games)
+runMatchup('Noir Normal vs Blanc Difficile', 'normal', 'difficile', games)

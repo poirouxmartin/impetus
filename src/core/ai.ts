@@ -78,12 +78,20 @@ function pickRandom<T>(items: T[]): T {
   return items[Math.floor(Math.random() * items.length)]
 }
 
+const BUDGET_MS: Record<'normal' | 'difficile', number> = { normal: 260, difficile: 1300 }
+
 /**
  * Choisit une action parmi `allowed` (déjà filtrées par les règles du Game).
  * Facile : gagne si possible, sinon aléatoire avec biais capture.
  * Normal / Difficile : approfondissement itératif avec budget temps.
+ * `budgetMs` permet de réduire le temps de réflexe (self-play, tests).
  */
-export function chooseAction(pos: Position, level: Level, allowed: Action[]): Action | null {
+export function chooseAction(
+  pos: Position,
+  level: Level,
+  allowed: Action[],
+  budgetMs?: number,
+): Action | null {
   if (allowed.length === 0) return null
   if (allowed.length === 1) return allowed[0]
   const wins = allowed.filter((a) => isImmediateWin(pos, a))
@@ -103,7 +111,7 @@ export function chooseAction(pos: Position, level: Level, allowed: Action[]): Ac
     return pickRandom(pool)
   }
 
-  const budget = level === 'normal' ? 260 : 1300
+  const budget = Math.max(50, budgetMs ?? BUDGET_MS[level])
   const maxDepth = level === 'difficile' ? 8 : 5
   const deadline = Date.now() + budget
 
