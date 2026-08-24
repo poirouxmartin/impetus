@@ -16,6 +16,14 @@ export interface ClockSnap {
   ts: number
 }
 
+export interface ServerProfile {
+  name: string
+  rating: number
+  wins: number
+  losses: number
+  draws: number
+}
+
 export type ServerMsg =
   | {
       type: 'joined'
@@ -23,6 +31,8 @@ export type ServerMsg =
       color: Color
       state: NetPoint
       oppName: string
+      myRating?: number | null
+      oppRating?: number | null
     }
   | { type: 'oppJoined'; name: string }
   | { type: 'start' }
@@ -35,6 +45,9 @@ export type ServerMsg =
   | { type: 'queued'; count?: number }
   | { type: 'queue-left' }
   | { type: 'rematch-wait' }
+  | { type: 'auth-ok'; token: string; profile: ServerProfile }
+  | { type: 'auth-error'; message: string }
+  | { type: 'ranked'; delta: number; rating: number; oppRating: number }
 
 export interface NetClient {
   send(msg: unknown): void

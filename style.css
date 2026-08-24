@@ -602,3 +602,30 @@ button.danger:hover:not(:disabled) {
 .quick:hover {
   background: #1d2a20 !important;
 }
+
+.sep {
+  border: none;
+  border-top: 1px solid #2c333d;
+  margin: 4px 0;
+}
+
+#auth-status {
+  font-size: 0.8rem;
+  color: #9aa0a8;
+}
+
+#auth-status.ok {
+  color: #7ee787;
+}
+
+.authed-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.92rem;
+}
+
+.authed-line .elo {
+  color: #7ee787;
+  font-weight: 700;
+}

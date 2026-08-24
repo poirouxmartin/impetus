@@ -1,8 +1,15 @@
 import { createServer } from 'node:http'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, appendFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { WebSocketServer, WebSocket } from 'ws'
 import { Action, Color, Game } from '../src/core/rules'
+import {
+  applyRanked,
+  login as authLogin,
+  publicByName,
+  register as authRegister,
+  userByToken,
+} from './auth'
 
 const PORT = Number(process.env.PORT) || 8787
 const DIST = join(process.cwd(), 'dist')
@@ -38,6 +45,8 @@ const httpServer = createServer((req, res) => {
 interface Seat {
   ws: WebSocket | null
   name: string
+  account?: string
+  color: Color
 }
 
 interface ClockCfg {
@@ -74,7 +83,35 @@ interface Room {
 }
 
 const rooms = new Map<string, Room>()
-const quickQueue: { ws: WebSocket; name: string }[] = []
+const quickQueue: { ws: WebSocket; name: string; account?: string }[] = []
+
+function other(c: Color): Color {
+  return c === 'black' ? 'white' : 'black'
+}
+
+function endRoomGame(room: Room, winner: Color, reason: string): void {
+  if (room.result) return
+  room.result = { winner, reason }
+  broadcast(room, { type: 'gameover', winner, reason })
+  broadcast(room, publicState(room))
+  const a0 = room.seats[0].account
+  const a1 = room.seats[1].account
+  if (a0 && a1) {
+    const winnerSeat = room.seats.find((s) => s.color === winner)!
+    const loserSeat = room.seats.find((s) => s.color !== winner)!
+    if (!winnerSeat.account || !loserSeat.account) return
+    const [rw, rl] = applyRanked(winnerSeat.account, loserSeat.account)
+    room.seats.forEach((s) => {
+      const mine = s.color === winner ? rw : rl
+      send(s.ws, {
+        type: 'ranked',
+        delta: mine.delta,
+        rating: mine.user.rating,
+        oppRating: (s.color === winner ? rl : rw).user.rating,
+      })
+    })
+  }
+}
 
 const COLORS: Color[] = ['black', 'white']
 
@@ -100,11 +137,16 @@ function publicState(room: Room) {
   const now = Date.now()
   let clock: Record<string, number | null> | null = null
   if (room.clock) {
-    const turnIdx = COLORS.indexOf(room.game.position.turn)
-    const live = room.clock.rem.map((v, i) =>
-      i === turnIdx && !room.result && !room.game.winner ? v - (now - room.clock!.turnStart) : v,
-    )
-    clock = { black: Math.max(0, live[0]), white: Math.max(0, live[1]), ts: now }
+    const out: Record<Color, number> = { black: 0, white: 0 }
+    room.seats.forEach((s, i) => {
+      const running =
+        !room.result && !room.game.winner && room.game.position.turn === s.color
+      out[s.color] = Math.max(
+        0,
+        room.clock!.rem[i] - (running ? now - room.clock!.turnStart : 0),
+      )
+    })
+    clock = { black: out.black, white: out.white, ts: now }
   }
   return {
     type: 'state',
@@ -137,14 +179,49 @@ function locate(ws: WebSocket): { room: Room; me: number } | null {
 }
 
 wss.on('connection', (ws) => {
+  let authName: string | null = null
+
+  const handleAuthish = (msg: Record<string, unknown>): boolean => {
+    if (msg.type === 'register') {
+      const res = authRegister(msg.name, msg.password)
+      if (res.ok) {
+        authName = res.user.name.toLowerCase()
+        send(ws, { type: 'auth-ok', token: res.token, profile: res.user })
+      } else send(ws, { type: 'auth-error', message: res.error })
+      return true
+    }
+    if (msg.type === 'login') {
+      const res = authLogin(msg.name, msg.password)
+      if (res.ok) {
+        authName = res.user.name.toLowerCase()
+        send(ws, { type: 'auth-ok', token: res.token, profile: res.user })
+      } else send(ws, { type: 'auth-error', message: res.error })
+      return true
+    }
+    if (msg.type === 'auth') {
+      const u = userByToken(msg.token)
+      if (u) {
+        authName = u.name.toLowerCase()
+        send(ws, {
+          type: 'auth-ok',
+          token: String(msg.token),
+          profile: publicByName(authName)!,
+        })
+      } else send(ws, { type: 'auth-error', message: 'Session expirée' })
+      return true
+    }
+    return false
+  }
 
   ws.on('message', (data) => {
+    try {
     let msg: Record<string, unknown>
     try {
       msg = JSON.parse(String(data))
     } catch {
       return
     }
+    if (handleAuthish(msg)) return
     const type = msg.type as string
 
     if (type === 'create') {
@@ -154,7 +231,7 @@ wss.on('connection', (ws) => {
         id: genCode(),
         game: new Game(),
         seats: [
-          { ws, name },
+          { ws, name, account: authName ?? undefined, color: 'black' },
           { ws: null, name: '' },
         ],
         wantRematch: [false, false],
@@ -164,9 +241,10 @@ wss.on('connection', (ws) => {
       send(ws, {
         type: 'joined',
         code: r.id,
-        color: COLORS[0],
+        color: 'black',
         state: publicState(r),
         oppName: '',
+        myRating: publicByName(authName)?.rating ?? null,
       })
       return
     }
@@ -179,24 +257,24 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'queue-left' })
         return
       }
-      quickQueue.push({ ws, name })
+      quickQueue.push({ ws, name, account: authName ?? undefined })
       send(ws, { type: 'queued', count: quickQueue.length })
       while (quickQueue.length >= 2) {
         const A = quickQueue.shift()!
         const B = quickQueue.shift()!
         const cfg = FAST ? { base: 600, inc: 0 } : CLOCKS['5+0']
+        const colors: Color[] = Math.random() < 0.5 ? ['black', 'white'] : ['white', 'black']
         const r: Room = {
           id: genCode(),
           game: new Game(),
           seats: [
-            { ws: A.ws, name: A.name },
-            { ws: B.ws, name: B.name },
+            { ws: A.ws, name: A.name, account: A.account, color: colors[0] },
+            { ws: B.ws, name: B.name, account: B.account, color: colors[1] },
           ],
           wantRematch: [false, false],
           clock: { cfg, rem: [cfg.base, cfg.base], turnStart: Date.now() },
         }
         rooms.set(r.id, r)
-        const colors: Color[] = Math.random() < 0.5 ? ['black', 'white'] : ['white', 'black']
         ;[A, B].forEach((q, i) => {
           send(q.ws, {
             type: 'joined',
@@ -204,6 +282,8 @@ wss.on('connection', (ws) => {
             color: colors[i],
             state: publicState(r),
             oppName: (i === 0 ? B : A).name,
+            myRating: publicByName((i === 0 ? A : B).account)?.rating ?? null,
+            oppRating: publicByName((i === 0 ? B : A).account)?.rating ?? null,
           })
         })
         broadcast(r, { type: 'start' })
@@ -233,13 +313,15 @@ wss.on('connection', (ws) => {
 
 
       const name = String(msg.name ?? 'Joueur').slice(0, 24)
-      target.seats[free] = { ws, name }
+      target.seats[free] = { ws, name, account: authName ?? undefined, color: COLORS[free] }
       send(ws, {
         type: 'joined',
         code: target.id,
         color: COLORS[free],
         state: publicState(target),
         oppName: target.seats[1 - free].name,
+        myRating: publicByName(authName)?.rating ?? null,
+        oppRating: publicByName(target.seats[1 - free].account)?.rating ?? null,
       })
       send(target.seats[1 - free].ws, { type: 'oppJoined', name })
       broadcast(target, { type: 'start' })
@@ -253,9 +335,10 @@ wss.on('connection', (ws) => {
     }
     const room = loc.room
     const me = loc.me
-    const myColor = COLORS[me]
+    const myColor = room.seats[me].color
 
     if (type === 'move') {
+      appendFileSync(join(process.cwd(), 'srv-dbg.txt'), `[move] my=${myColor} turn=${room.game.position.turn} mc=${room.game.position.moveCount} seats=${JSON.stringify(room.seats.map((s) => ({ n: s.name, c: s.color })))}\n`)
       if (room.game.winner || room.result) {
         send(ws, { type: 'error', message: 'La partie est finie' })
         return
@@ -264,16 +347,14 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'error', message: 'Ce n’est pas ton tour' })
         return
       }
-      const meIdx = COLORS.indexOf(myColor)
+      const meIdx = me
       const now = Date.now()
       if (room.clock && !FAST) {
         room.clock.rem[meIdx] -= now - room.clock.turnStart
         room.clock.turnStart = now
         if (room.clock.rem[meIdx] <= 0) {
           room.clock.rem[meIdx] = 0
-          room.result = { winner: COLORS[1 - meIdx], reason: 'temps' }
-          broadcast(room, { type: 'gameover', winner: room.result.winner, reason: 'temps' })
-          broadcast(room, publicState(room))
+          endRoomGame(room, other(myColor), 'temps')
           return
         }
       }
@@ -290,21 +371,14 @@ wss.on('connection', (ws) => {
       send(ws, { type: 'ack', action })
       broadcast(room, publicState(room))
       if (room.game.winner) {
-        broadcast(room, {
-          type: 'gameover',
-          winner: room.game.winner,
-          reason: room.game.winnerReason,
-        })
+        endRoomGame(room, room.game.winner, room.game.winnerReason || 'percée')
       }
       return
     }
 
     if (type === 'resign') {
       if (room.game.winner || room.result) return
-      const winner = COLORS[1 - me]
-      room.result = { winner, reason: 'abandon' }
-      broadcast(room, { type: 'gameover', winner, reason: 'abandon' })
-      broadcast(room, publicState(room))
+      endRoomGame(room, other(myColor), 'abandon')
       return
     }
 
@@ -322,21 +396,26 @@ wss.on('connection', (ws) => {
           room.clock.turnStart = Date.now()
         }
         const r = room
-        room.seats.forEach((s, i) => {
+        room.seats.forEach((s) => {
           send(s.ws, {
             type: 'joined',
             code: r.id,
-            color: COLORS[1 - i],
+            color: other(s.color),
             state: publicState(r),
-            oppName: r.seats[1 - i].name,
+            oppName: r.seats.find((x) => x !== s)?.name ?? '',
           })
         })
         broadcast(room, { type: 'start' })
-        console.log('[rematch] envoyé')
       } else {
         send(ws, { type: 'rematch-wait' })
       }
       return
+    }
+    } catch (err) {
+      appendFileSync(
+        join(process.cwd(), 'srv-dbg.txt'),
+        'ERR ' + String(err) + '\n' + ((err as Error).stack ?? '') + '\n',
+      )
     }
   })
 
@@ -358,12 +437,10 @@ setInterval(() => {
   for (const room of rooms.values()) {
     if (!room.clock || room.result || room.game.winner) continue
     if (room.seats.some((s) => !s.ws)) continue
-    const turnIdx = COLORS.indexOf(room.game.position.turn)
+    const turnIdx = room.seats.findIndex((s) => s.color === room.game.position.turn)
     if (now - room.clock.turnStart > room.clock.rem[turnIdx]) {
       room.clock.rem[turnIdx] = 0
-      room.result = { winner: COLORS[1 - turnIdx], reason: 'temps' }
-      broadcast(room, { type: 'gameover', winner: room.result.winner, reason: 'temps' })
-      broadcast(room, publicState(room))
+      endRoomGame(room, other(room.seats[turnIdx].color), 'temps')
     }
   }
 }, 400)
@@ -371,3 +448,8 @@ setInterval(() => {
 httpServer.listen(PORT, () => {
   console.log(`Impetus serveur : http://localhost:${PORT}  (WS même port)${FAST ? ' — HORLOGE RAPIDE (test)' : ''}`)
 })
+
+
+
+
+

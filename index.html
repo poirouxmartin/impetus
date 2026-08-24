@@ -73,6 +73,16 @@
               <div id="engine-info"></div>
             </section>
             <section class="group" id="online-group" hidden>
+              <div class="row" id="auth-zone">
+                <input id="auth-name" placeholder="Pseudo" maxlength="16" style="flex:1" />
+                <input id="auth-pass" type="password" placeholder="Mot de passe" maxlength="64" style="flex:1" />
+              </div>
+              <div class="row">
+                <button id="auth-login" style="flex:1">Se connecter</button>
+                <button id="auth-register" style="flex:1">Créer un compte</button>
+              </div>
+              <div id="auth-status">Non connecté — les parties rapides ne seront pas classées.</div>
+              <hr class="sep" />
               <label class="check">
                 <span>Cadence</span>
                 <select id="clock-sel">

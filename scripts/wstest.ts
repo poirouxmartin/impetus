@@ -29,6 +29,7 @@ function once<T>(ws: WebSocket, filter: (m: any) => boolean, ms = 3000): Promise
 
 const a = new WebSocket(URL)
 await new Promise((r) => a.on('open', r))
+a.on('message', (m) => console.log('A<', String(m).slice(0, 80)))
 a.send(JSON.stringify({ type: 'create', name: 'Alice' }))
 const joinedA = await once<any>(a, (m) => m.type === 'joined')
 expect(joinedA.color === 'black', 'Alice recoit Noir')
@@ -36,6 +37,7 @@ expect(/^[A-Z0-9]{4}$/.test(joinedA.code), `code salon (${joinedA.code})`)
 
 const b = new WebSocket(URL)
 await new Promise((r) => b.on('open', r))
+b.on('message', (m) => console.log('B<', String(m).slice(0, 80)))
 b.send(JSON.stringify({ type: 'join', code: joinedA.code, name: 'Bob' }))
 const joinedB = await once<any>(b, (m) => m.type === 'joined')
 expect(joinedB.color === 'white', 'Bob recoit Blanc')
@@ -86,5 +88,48 @@ expect(rc.color !== pc.color, 'revanche : couleurs inversées')
 
 c.close()
 d.close()
+
+// ---- Comptes classés : inscription, appariement, abandon → variations Elo ----
+import { existsSync, readFileSync } from 'node:fs'
+const suffix = Date.now() % 100000
+const eSock = new WebSocket(URL)
+await new Promise((r) => eSock.on('open', r))
+eSock.send(JSON.stringify({ type: 'register', name: `tst${suffix}a`, password: 'abcd' }))
+const regA = await once<any>(eSock, (m) => m.type === 'auth-ok')
+expect(regA.profile.rating === 1200, `inscription A (${regA.profile.rating})`)
+
+const fSock = new WebSocket(URL)
+await new Promise((r) => fSock.on('open', r))
+fSock.send(JSON.stringify({ type: 'register', name: `tst${suffix}b`, password: 'abcd' }))
+const regB = await once<any>(fSock, (m) => m.type === 'auth-ok')
+expect(regB.profile.rating === 1200, `inscription B (${regB.profile.rating})`)
+
+const jeA = once<any>(eSock, (m) => m.type === 'joined')
+const jeB = once<any>(fSock, (m) => m.type === 'joined')
+eSock.on('message', (m) => console.log('E<', String(m).slice(0, 90)))
+fSock.on('message', (m) => console.log('F<', String(m).slice(0, 90)))
+eSock.send(JSON.stringify({ type: 'quick', name: 'EA' }))
+fSock.send(JSON.stringify({ type: 'quick', name: 'FB' }))
+const [pa, pb] = await Promise.all([jeA, jeB])
+expect(pa.state.clock && pb.state.clock, 'partie classée avec horloge')
+
+const blackRanked = pa.color === 'black' ? eSock : fSock
+const whiteRanked = blackRanked === eSock ? fSock : eSock
+const rkW = once<any>(whiteRanked, (m) => m.type === 'move')
+blackRanked.send(JSON.stringify({ type: 'move', action: { kind: 'place', row: 0, col: 4 } }))
+await rkW
+whiteRanked.send(JSON.stringify({ type: 'resign' }))
+
+const rkdE = once<any>(eSock, (m) => m.type === 'ranked')
+const rkdF = once<any>(fSock, (m) => m.type === 'ranked')
+const [re_, rf] = await Promise.all([rkdE, rkdF])
+expect(re_.delta * rf.delta < 0, `Elo classé : ${re_.delta} / ${rf.delta}`)
+expect(existsSync('data/users.json'), 'data/users.json persisté')
+
+eSock.close()
+fSock.close()
 console.log(failures === 0 ? '\nTOUT PASSE' : `\n${failures} echec(s)`)
 process.exit(failures === 0 ? 0 : 1)
+
+
+

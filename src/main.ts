@@ -67,6 +67,12 @@ const roomCodeInput = document.getElementById('room-code') as HTMLInputElement
 const roomCreate = document.getElementById('room-create') as HTMLButtonElement
 const roomJoin = document.getElementById('room-join') as HTMLButtonElement
 const resignBtn = document.getElementById('resign') as HTMLButtonElement
+const authZone = document.getElementById('auth-zone') as HTMLElement
+const authNameInput = document.getElementById('auth-name') as HTMLInputElement
+const authPassInput = document.getElementById('auth-pass') as HTMLInputElement
+const authLoginBtn = document.getElementById('auth-login') as HTMLButtonElement
+const authRegisterBtn = document.getElementById('auth-register') as HTMLButtonElement
+const authStatusEl = document.getElementById('auth-status')!
 const clkBlack = document.getElementById('clk-black') as HTMLElement
 const clkWhite = document.getElementById('clk-white') as HTMLElement
 const clocksEl = document.getElementById('clocks') as HTMLElement
@@ -112,6 +118,39 @@ let historyRecords = loadHistory(store)
 let gameId = 1
 let recorded = false
 let movesLog: Action[] = []
+
+interface AuthState {
+  token: string
+  name: string
+  rating: number
+}
+let auth: AuthState | null = (() => {
+  try {
+    const raw = store.getItem('impetus.auth.v1')
+    return raw ? (JSON.parse(raw) as AuthState) : null
+  } catch {
+    return null
+  }
+})()
+
+function saveAuth(): void {
+  if (auth) store.setItem('impetus.auth.v1', JSON.stringify(auth))
+  else store.removeItem('impetus.auth.v1')
+}
+
+function renderAuthZone(): void {
+  if (auth) {
+    authZone.innerHTML = `<div class="authed-line"><span>👤 ${auth.name}</span><span class="elo">${auth.rating}</span></div>`
+    authStatusEl.textContent = 'Compte connecté — parties rapides classées.'
+    authStatusEl.className = 'ok'
+  }
+}
+
+function handleAuthOk(token: string, p: { name: string; rating: number }): void {
+  auth = { token, name: p.name, rating: p.rating }
+  saveAuth()
+  renderAuthZone()
+}
 
 const replayer = new ReplayViewer(replayCanvas, replayInfo)
 
@@ -165,6 +204,21 @@ function submitAction(a: Action): void {
 
 function handleNet(msg: ServerMsg): void {
   switch (msg.type) {
+    case 'auth-ok':
+      handleAuthOk(msg.token, msg.profile)
+      return
+    case 'auth-error':
+      authStatusEl.textContent = `⚠ ${msg.message}`
+      authStatusEl.className = ''
+      return
+    case 'ranked':
+      if (auth) {
+        auth.rating = msg.rating
+        saveAuth()
+        renderAuthZone()
+      }
+      netStatus(`Partie classée : ${msg.delta > 0 ? '+' : ''}${msg.delta} Elo → ${msg.rating}`)
+      return
     case 'joined':
       if (!currentNet) return
       online = { net: currentNet, code: msg.code, color: msg.color, oppName: msg.oppName }
@@ -176,6 +230,10 @@ function handleNet(msg: ServerMsg): void {
       if (msg.state.clock) {
         clockSnap = { ...msg.state.clock, turn: msg.state.turn, running: !game.winner }
       } else clockSnap = null
+      if (msg.myRating != null && auth) {
+        auth.rating = msg.myRating
+        saveAuth()
+      }
       refresh()
       netStatus(
         online.oppName
@@ -240,12 +298,20 @@ function openNet(): void {
   } else if (currentNet) {
     currentNet.close()
   }
-  currentNet = connectNet(netUrl(), handleNet, () => {}, () => {
-    if (online && !game.winner) {
-      online = null
-      netStatus('Connexion perdue')
-    }
-  })
+  const wasAuth = auth?.token
+  currentNet = connectNet(
+    netUrl(),
+    handleNet,
+    () => {
+      if (wasAuth) currentNet!.send({ type: 'auth', token: wasAuth })
+    },
+    () => {
+      if (online && !game.winner) {
+        online = null
+        netStatus('Connexion perdue')
+      }
+    },
+  )
 }
 
 function leaveOnline(): void {
@@ -761,6 +827,24 @@ roomCreate.addEventListener('click', () => {
   const net = currentNet!
   net.send({ type: 'create', name: profile.pseudo, clock: clockSel.value })
   netStatus('Connexion…')
+})
+
+function doAuth(registerMode: boolean): void {
+  const name = authNameInput.value.trim()
+  const pass = authPassInput.value
+  if (!name || !pass) {
+    authStatusEl.textContent = '⚠ Pseudo et mot de passe requis'
+    return
+  }
+  openNet()
+  const net = currentNet!
+  net.send({ type: registerMode ? 'register' : 'login', name, password: pass })
+}
+
+authLoginBtn.addEventListener('click', () => doAuth(false))
+authRegisterBtn.addEventListener('click', () => doAuth(true))
+authPassInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doAuth(false)
 })
 
 quickBtn.addEventListener('click', () => {
