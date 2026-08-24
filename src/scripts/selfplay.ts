@@ -1,6 +1,5 @@
-import { Color } from '../core/rules'
 import { Level } from '../core/ai'
-import { GameResult, playGame } from './runner'
+import { playGame } from './runner'
 
 function runMatchup(name: string, black: Level, white: Level, games: number): void {
   let blackWins = 0

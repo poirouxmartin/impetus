@@ -11,6 +11,7 @@ import {
   hasBreakthrough,
   idx,
   other,
+  currentRules,
   setRules,
   slideDestination,
 } from './core/rules'
@@ -573,7 +574,7 @@ function syncAnalysis(): void {
   }
   const w = ensureWorker()
   analysisGen++
-  w.postMessage({ type: 'analyse', gen: analysisGen, pos: clonePos() })
+  w.postMessage({ type: 'analyse', gen: analysisGen, pos: clonePos(), rules: currentRules() })
 }
 
 function tryPlay(a: Action): void {
@@ -909,18 +910,11 @@ const HINT_STD =
 const HINT_DELAYED =
   'Expérimental — percée différée : une pierre sur la rangée adverse ne gagne que si elle survit à une riposte (l\'adversaire doit la capturer).'
 
-/** Applique la variante de règles choisie (local uniquement) ; coupe l'analyse, fausse en différée. */
+/** Applique la variante de règles choisie (local uniquement). */
 function applyRuleVariant(): void {
   const delayed = delayedCb.checked
   setRules(delayed ? { breakthroughDelay: true } : undefined)
   hintEl.textContent = delayed ? HINT_DELAYED : HINT_STD
-  if (delayed && liveCb.checked) {
-    liveCb.checked = false
-    liveOn = false
-    analysis = null
-    updateAnalysisPanel()
-    syncAnalysis()
-  }
 }
 
 function showLobby(): void {

@@ -32,6 +32,18 @@ export const DEFAULT_RULES: RuleConfig = {
   breakthroughDelay: false,
 }
 
+/** Configuration courante (pour transmettre les règles au worker d'analyse, par ex.). */
+export function currentRules(): RuleConfig {
+  return {
+    size: SIZE,
+    reserve: START_RESERVE,
+    range: MAX_RANGE,
+    occurrences: MAX_OCCURRENCES,
+    breakthrough: BREAKTHROUGH,
+    breakthroughDelay: BREAKTHROUGH_DELAY,
+  }
+}
+
 /** Applique une configuration de règles ; sans argument, restaure les règles standard (9×9, réserve 10, portée 3). */
 export function setRules(cfg?: Partial<RuleConfig>): void {
   const r = { ...DEFAULT_RULES, ...cfg }

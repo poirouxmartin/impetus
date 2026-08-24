@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Action, Color, SIZE, applyAction, initialState, legalActions } from './rules'
+import { Action, Color, SIZE, applyAction, initialState, legalActions, setRules } from './rules'
 import { analyse, engineActions, Analyzer, notation } from './engine'
 
 const WIN = 1_000_000
@@ -46,6 +46,37 @@ describe('moteur d analyse', () => {
     expect(a).not.toBeNull()
     expect(a!.best!.action.kind).toBe('slide')
     expect(a!.best!.score).toBeGreaterThan(WIN - 100)
+  })
+
+  it('percée différée : arrivée incapturable = mat forcé vu par le moteur', () => {
+    try {
+      setRules({ breakthroughDelay: true })
+      // Noir en e7, Blanc en a9 (hors de portée de e9) : l'arrivée en e9 décide
+      const arrival = {
+        ...initialState(),
+        cells: (() => {
+          const c: (Color | null)[] = Array(SIZE * SIZE).fill(null)
+          c[6 * SIZE + 4] = 'black'
+          c[8 * SIZE] = 'white'
+          return c
+        })(),
+        reserves: { black: 5, white: 5 },
+        turn: 'black' as const,
+        moveCount: 10,
+      }
+      const a1 = analyse(arrival, 400)
+      expect(a1).not.toBeNull()
+      expect(a1!.best!.action.kind).toBe('slide')
+      expect(a1!.best!.score).toBeGreaterThan(WIN - 100)
+      // Blanc au trait après l'arrivée : aucune riposte n'évacue la menace → perdu
+      const survived = applyAction(arrival, a1!.best!.action)
+      expect(survived.turn).toBe('white')
+      const a2 = analyse(survived, 400)
+      expect(a2).not.toBeNull()
+      expect(a2!.best!.score).toBeLessThan(-(WIN - 100))
+    } finally {
+      setRules()
+    }
   })
 
   it('la notation est lisible', () => {

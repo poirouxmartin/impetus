@@ -37,7 +37,7 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 - ~~Taille du plateau, taille de réserve, portée de glisse~~ → **tranché par sweep self-play (v1.2)** : 9×9 / réserve 10 / portée 3 est la seule config équilibrée testée (voir « Chiffres mesurés »)
 - ~~Forme exacte de l'anti-répétition~~ → occ2 (règle des 3 positions) conservée ; occ1 (ko strict) viable mais sans gain mesuré
 - ~~Nulles, parties infinies, gain forcé à l'ouverture~~ → **aucun des trois n'existe** : pas de règle de nulle (le jeu est toujours décisif), terminaison garantie par l'anti-répétition (états finis × 2 occurrences max), aucun gain forcé détecté à l'ouverture (profondeur 13 : score ≈ 0 ; première percée forcée détectée entre les coups 25 et 52, moyenne 37)
-- **Adopter la percée différée ?** (v1.2 candidate) : +33 % de longueur de partie, contrejeu défensif riche, équilibre à confirmer en humain + IA recalibrée (l'évaluation actuelle récompense la progression, pas la menace d'arrivée suspendue)
+- **Adopter la percée différée ?** (v1.2 candidate) : +37 % de longueur de partie, contrejeu défensif riche. IA (menace d'arrivée valorisée) et moteur d'analyse (détection de brèche à l'entrée de nœud, worker inclus) recalibrés : équilibre confirmé au self-play (55/45 à 64 parties, dans le bruit). Reste le verdict humain sur le ressenti.
 - Faut-il diversifier les fins de partie ? Anéantissement/immobilisation restent des garde-fous : les rendre fréquentes exigerait de ralentir le jeu (percée×2) au prix de l'équilibre
 
 ## Outils
@@ -81,7 +81,7 @@ Toutes les fins mesurées sont des percées — la domination de la percée est 
 |---|---|---|---|---|
 | **référence b1·r10** | **53/47** | 40 | percée ×32 | ✅ équilibre de référence |
 | percée×2 | 13/88 · 38/63 | 42–80 | percée + anéanti 1–2 | surcorrige côté défense, parties ×2 |
-| percée différée (survie 1 coup) | 41/59 | 53 | percée ×32 | +33 % de longueur, léger biais Blanc (à valider : IA non recalibrée) |
+| percée différée (survie 1 coup) | 55/45 · IA recalibrée | 51 | percée ×64 | **+37 % de longueur, équilibre confirmé — candidate v1.2** |
 | différée·r7 | 28/72 | 37 | percée ×32 | biais Blanc net |
 | différée·r6 | 44/56 | 31 | percée ×32 | proche équilibre |
 | réserve 7 | 50/50 | 29 | percée ×16 | variante tempo valide |

@@ -1,4 +1,4 @@
-import { Action, Color, Dir, Position } from './rules'
+import { Action, BREAKTHROUGH_DELAY, Color, Dir, Position } from './rules'
 
 export const DIR_NAMES: Dir[] = ['up', 'down', 'left', 'right']
 const DELTA = [
@@ -273,10 +273,23 @@ function isWinAfter(
   u: Undo,
   me: 1 | 2,
 ): boolean {
-  if (m.kind === KIND_SLIDE && Math.floor(m.to / S) === targetRowOf(me)) return true
+  // Percée immédiate uniquement hors mode différé ; en différé, la victoire est
+  // résolue à l'entrée du nœud suivant (breachRow).
+  if (!BREAKTHROUGH_DELAY && m.kind === KIND_SLIDE && Math.floor(m.to / S) === targetRowOf(me)) {
+    return true
+  }
   if (u.captured !== EMPTY) {
     const opp = other(me)
     if (st.cnt[opp - 1] === 0 && st.res[opp - 1] === 0) return true
+  }
+  return false
+}
+
+/** Percée différée : `side` occupe sa rangée cible — l'adversaire n'a pas capturé, il perd. */
+function breachRow(st: St, side: 1 | 2): boolean {
+  const base = targetRowOf(side) * S
+  for (let c = 0; c < S; c++) {
+    if (st.b[base + c] === side) return true
   }
   return false
 }
@@ -314,6 +327,7 @@ function evaluate(st: St): number {
     score += sign * ((ADV_MAX * (S - 1 - dist)) / (S - 1))
     if (dist === 1) score += sign * 30
     else if (dist === 2) score += sign * 15
+    if (BREAKTHROUGH_DELAY && dist === 0) score += sign * 260
     if (hanging[i]) score -= sign * HANGING
   }
   score += (st.res[0] - st.res[1]) * 58
@@ -394,6 +408,7 @@ function orderMoves(st: St, moves: Move[], ttMove: Move | null, ply: number): vo
 function quiesce(st: St, alpha: number, beta: number, qd: number): number {
   nodes++
   timeCheck()
+  if (BREAKTHROUGH_DELAY && breachRow(st, st.turn)) return WIN - st.mc - 2
   const stand = evaluate(st)
   if (stand >= beta) return beta
   if (stand > alpha) alpha = stand
@@ -417,6 +432,7 @@ function quiesce(st: St, alpha: number, beta: number, qd: number): number {
 function search(st: St, depth: number, alpha: number, beta: number, ply: number): number {
   nodes++
   timeCheck()
+  if (BREAKTHROUGH_DELAY && breachRow(st, st.turn)) return WIN - ply
   const alphaOrig = alpha
   const e = tt.get(st.key)
   if (e && e.key2 === st.key2 && e.d >= depth) {

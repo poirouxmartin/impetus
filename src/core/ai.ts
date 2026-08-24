@@ -1,5 +1,6 @@
 import {
   Action,
+  BREAKTHROUGH_DELAY,
   Color,
   Position,
   SIZE,
@@ -19,6 +20,8 @@ const WIN = 1_000_000
 const STONE_ON_BOARD = 100
 const STONE_IN_RESERVE = 58
 const MAX_ADVANCE = 24
+/** Percée différée : pierre sur la rangée cible = menace que l'adversaire doit répondre. */
+const BREACH_THREAT = 260
 
 function distanceToTarget(row: number, color: Color): number {
   return Math.abs(row - targetRow(color))
@@ -35,6 +38,7 @@ export function evaluate(pos: Position, me: Color): number {
       const side = cell === me ? 1 : -1
       score += side * STONE_ON_BOARD
       score += side * MAX_ADVANCE * ((SIZE - 1 - distanceToTarget(r, cell)) / (SIZE - 1))
+      if (BREAKTHROUGH_DELAY && distanceToTarget(r, cell) === 0) score += side * BREACH_THREAT
     }
   }
   return score
@@ -47,6 +51,7 @@ function moveOrder(pos: Position, a: Action): number {
   if (!dest) return -Infinity
   let score = 0
   if (dest.capture) score += 800
+  if (BREAKTHROUGH_DELAY && dest.row === targetRow(pos.turn)) score += 500
   score += (distanceToTarget(a.row, pos.turn) - distanceToTarget(dest.row, pos.turn)) * 30
   return score
 }
