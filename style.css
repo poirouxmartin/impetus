@@ -53,7 +53,7 @@ canvas {
 }
 
 #panel {
-  width: 270px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -205,6 +205,13 @@ select {
   flex-wrap: wrap;
 }
 
+#rules-hint {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+
 button {
   background: var(--btn-bg);
   color: var(--text);
@@ -268,17 +275,21 @@ button:disabled {
 
 #board-area {
   display: flex;
-  gap: 10px;
-  align-items: stretch;
+  justify-content: center;
 }
 
 #evalbar {
-  width: 12px;
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  bottom: 10px;
+  width: 8px;
   border-radius: var(--r-full);
   background: var(--evalbar-bg);
   border: 1px solid var(--line);
-  position: relative;
   overflow: hidden;
+  z-index: 5;
+  opacity: 0.92;
 }
 
 #evalbar-white {
@@ -1032,17 +1043,6 @@ button:focus:not(:focus-visible) {
   #board-column {
     width: 100%;
     max-width: 630px;
-  }
-
-  #evalbar {
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    bottom: 8px;
-    width: 10px;
-    height: auto;
-    z-index: 6;
-    opacity: 0.9;
   }
 
   #panel {

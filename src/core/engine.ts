@@ -376,6 +376,16 @@ function timeCheck(): void {
   if ((nodes & 1023) === 0 && Date.now() > deadline) throw new TimeoutErr()
 }
 
+/** Applique un coup en garantissant le défaire même si le timeout interrompt la recherche. */
+function withMove<T>(st: St, m: Move, fn: (u: Undo) => T): T {
+  const u = applyMove(st, m)
+  try {
+    return fn(u)
+  } finally {
+    unmakeMove(st, m, u)
+  }
+}
+
 function orderMoves(st: St, moves: Move[], ttMove: Move | null, ply: number): void {
   const me = st.turn
   const victimSide = other(me)
@@ -418,11 +428,9 @@ function quiesce(st: St, alpha: number, beta: number, qd: number): number {
   orderMoves(st, moves, null, 0)
   const me = st.turn
   for (const m of moves) {
-    const u = applyMove(st, m)
-    const sc = isWinAfter(st, m, u, me)
-      ? WIN - MAX_PLY
-      : -quiesce(st, -beta, -alpha, qd - 1)
-    unmakeMove(st, m, u)
+    const sc = withMove(st, m, (u) =>
+      isWinAfter(st, m, u, me) ? WIN - MAX_PLY : -quiesce(st, -beta, -alpha, qd - 1),
+    )
     if (sc >= beta) return beta
     if (sc > alpha) alpha = sc
   }
@@ -454,11 +462,9 @@ function search(st: St, depth: number, alpha: number, beta: number, ply: number)
   let bestMove: Move | null = null
   const me = st.turn
   for (const m of moves) {
-    const u = applyMove(st, m)
-    const sc = isWinAfter(st, m, u, me)
-      ? WIN - ply - 1
-      : -search(st, depth - 1, -beta, -alpha, ply + 1)
-    unmakeMove(st, m, u)
+    const sc = withMove(st, m, (u) =>
+      isWinAfter(st, m, u, me) ? WIN - ply - 1 : -search(st, depth - 1, -beta, -alpha, ply + 1),
+    )
     if (sc > best) {
       best = sc
       bestMove = m
@@ -558,11 +564,9 @@ export class Analyzer {
       let alpha = -Infinity
       const me = this.st.turn
       for (const { m } of this.scored) {
-        const u = applyMove(this.st, m)
-        const sc = isWinAfter(this.st, m, u, me)
-          ? WIN
-          : -search(this.st, this.depth, -Infinity, -alpha, 1)
-        unmakeMove(this.st, m, u)
+        const sc = withMove(this.st, m, (u) =>
+          isWinAfter(this.st, m, u, me) ? WIN : -search(this.st, this.depth, -Infinity, -alpha, 1),
+        )
         cur.push({ m, s: sc })
         if (sc > alpha) alpha = sc
       }

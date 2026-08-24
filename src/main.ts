@@ -739,7 +739,7 @@ function drawCoords(T: BoardPalette): void {
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   for (let r = 0; r < SIZE; r++) {
-    ctx.fillText(String(r + 1), 4, vy(r) * CELL + 3)
+    ctx.fillText(String(r + 1), 22, vy(r) * CELL + 3)
   }
   ctx.textAlign = 'right'
   ctx.textBaseline = 'bottom'
