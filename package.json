@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "stats": "esbuild src/scripts/selfplay.ts --bundle --platform=node --format=cjs --outfile=dist/selfplay.cjs --log-level=warning && node dist/selfplay.cjs",
+    "balance": "esbuild src/scripts/balance.ts --bundle --platform=node --format=cjs --outfile=dist/balance.cjs --log-level=warning && node dist/balance.cjs",
     "solve": "esbuild src/scripts/solve.ts --bundle --platform=node --format=cjs --outfile=dist/solve.cjs --log-level=warning && node --stack-size=100000 dist/solve.cjs",
     "duel": "esbuild src/scripts/duel.ts --bundle --platform=node --format=cjs --outfile=dist/duel.cjs --log-level=warning && node dist/duel.cjs",
     "server": "esbuild server/server.ts --bundle --platform=node --format=cjs --outfile=dist-server/server.cjs --log-level=warning && node dist-server/server.cjs",

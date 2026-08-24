@@ -13,6 +13,7 @@ import {
   outcome,
   other,
   positionHash,
+  setRules,
   slideDestination,
   winnerAfter,
 } from './rules'
@@ -231,5 +232,24 @@ describe('divers', () => {
 
   it('une partie neuve n a pas de gagnant', () => {
     expect(new Game().winner).toBeNull()
+  })
+
+  it('setRules applique une variante puis restaure le standard', () => {
+    try {
+      setRules({ size: 7, reserve: 6, range: 2, occurrences: 1 })
+      expect(SIZE).toBe(7)
+      expect(START_RESERVE).toBe(6)
+      const g = new Game()
+      expect(g.position.cells).toHaveLength(49)
+      expect(g.position.reserves.black).toBe(6)
+      expect(g.play({ kind: 'place', row: 0, col: 3 })).toBe(true)
+      expect(g.play({ kind: 'place', row: 6, col: 3 })).toBe(true)
+      expect(g.play({ kind: 'slide', row: 0, col: 3, dir: 'down' })).toBe(true)
+    } finally {
+      setRules()
+    }
+    expect(SIZE).toBe(9)
+    expect(START_RESERVE).toBe(10)
+    expect(new Game().position.cells).toHaveLength(81)
   })
 })

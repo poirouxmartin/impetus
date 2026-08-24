@@ -1,32 +1,6 @@
-import { Color, Game } from '../core/rules'
-import { Level, chooseAction } from '../core/ai'
-
-const MAX_PLIES = 300
-
-interface GameResult {
-  winner: Color | 'timeout'
-  reason: string
-  plies: number
-  swapUsed: boolean
-}
-
-function playGame(black: Level, white: Level): GameResult {
-  const game = new Game()
-  let swapUsed = false
-  while (!game.winner && game.position.moveCount < MAX_PLIES) {
-    const level: Level = game.position.turn === 'black' ? black : white
-    const action = chooseAction(game.position, level, game.legalMoves(), budgetFor(level))
-    if (!action) break
-    if (action.kind === 'swap') swapUsed = true
-    game.play(action)
-  }
-  return {
-    winner: game.winner ?? 'timeout',
-    reason: game.winnerReason ?? 'timeout',
-    plies: game.position.moveCount,
-    swapUsed,
-  }
-}
+import { Color } from '../core/rules'
+import { Level } from '../core/ai'
+import { GameResult, playGame } from './runner'
 
 function runMatchup(name: string, black: Level, white: Level, games: number): void {
   let blackWins = 0
@@ -39,7 +13,7 @@ function runMatchup(name: string, black: Level, white: Level, games: number): vo
   let plyMax = 0
 
   for (let i = 0; i < games; i++) {
-    const r = playGame(black, white)
+    const r = playGame(black, white, budgetFor)
     if (r.winner === 'black') blackWins++
     else if (r.winner === 'white') whiteWins++
     else timeouts++

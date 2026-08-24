@@ -2,10 +2,31 @@ export type Color = 'black' | 'white'
 export type Dir = 'up' | 'down' | 'left' | 'right'
 
 export const DIRS: Dir[] = ['up', 'down', 'left', 'right']
-export const SIZE = 9
-export const START_RESERVE = 10
+/** Règles courantes — mutables pour tester des variantes (self-play, solveur) ; l'UI reste en standard. */
+export let SIZE = 9
+export let START_RESERVE = 10
 /** Portée maximale d'une glisse (v1.1 : évite la traversée instantanée d'un plateau vide). */
-export const MAX_RANGE = 3
+export let MAX_RANGE = 3
+/** Anti-répétition : une position identique ne peut pas être créée une (N+1)e fois. */
+export let MAX_OCCURRENCES = 2
+
+export interface RuleConfig {
+  size: number
+  reserve: number
+  range: number
+  occurrences: number
+}
+
+export const DEFAULT_RULES: RuleConfig = { size: 9, reserve: 10, range: 3, occurrences: 2 }
+
+/** Applique une configuration de règles ; sans argument, restaure les règles standard (9×9, réserve 10, portée 3). */
+export function setRules(cfg?: Partial<RuleConfig>): void {
+  const r = { ...DEFAULT_RULES, ...cfg }
+  SIZE = r.size
+  START_RESERVE = r.reserve
+  MAX_RANGE = r.range
+  MAX_OCCURRENCES = r.occurrences
+}
 
 export interface Position {
   cells: (Color | null)[]
@@ -231,8 +252,6 @@ export function outcome(
   }
   return { winner: mover, reason: 'immobilisation' }
 }
-
-const MAX_OCCURRENCES = 2
 
 /**
  * Partie : position courante, historique (undo), anti-répétition

@@ -34,10 +34,9 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 
 ## Questions ouvertes (à trancher par le test)
 
-- Taille du plateau (7×7 ? 9×9 ? 11×11 ?), taille de réserve, portée de glisse (2 ? 3 ? 4 ?)
-- Ratio poser/glisser optimal — faut-il limiter les poses ?
-- Forme exacte de l'anti-répétition (ko simple ? règle des 3 positions ?)
-- La percée est-elle trop facile contre une défense molle ? Trop dure contre une bonne défense ?
+- ~~Taille du plateau, taille de réserve, portée de glisse~~ → **tranché par sweep self-play (v1.2)** : 9×9 / réserve 10 / portée 3 est la seule config équilibrée testée (voir « Chiffres mesurés »)
+- ~~Forme exacte de l'anti-répétition~~ → occ2 (règle des 3 positions) conservée ; occ1 (ko strict) viable mais sans gain mesuré
+- **La percée domine** : 100 % des fins de parties en self-play, tous niveaux. Anéantissement et immobilisation ne sortent jamais. Faut-il durcir la percée (2 pierres sur la rangée adverse ?) ou booster les captures pour équilibrer les motifs de fin ?
 
 ## Outils
 
@@ -46,6 +45,7 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 | `npm run dev` | Prototype jouable (http://localhost:5273) |
 | `npm test` | Tests moteur + IA + solveur |
 | `npm run stats` | Self-play IA vs IA (`npm run stats -- <parties> <budgetMsDifficile>`) |
+| `npm run balance` | Sweep de variantes en self-play (`npm run balance -- <parties> <budgetMs> <niveau> <indices>`) |
 | `npm run solve` | Complexité du jeu standard + frontière de résolubilité des variantes réduites |
 | `npm run duel` | Nouveau moteur vs ancienne IA (budget en ms, 2×n parties) |
 
@@ -57,6 +57,21 @@ Le niveau **Difficile** utilise le moteur d'analyse (négamax + table de transpo
 - Solveur exhaustif maison : résout jusqu'à 7×7 réserve 2 ; échoue dès réserve 3 en 6×6 (~6,5 M nœuds / 25 s)
 - Self-play : équilibre parfait Noir/Blanc au niveau Difficile via le swap (joué dans 100 % des parties)
 - La profondeur de calcul paie : ~78 % de victoire du niveau supérieur en affrontement croisé (0,35 s/coup)
+
+### Sweep de variantes (`npm run balance`, self-play 12–16 parties)
+
+| Variante | Normal (sans swap) | Difficile (avec swap) | Verdict |
+|---|---|---|---|
+| **9×9 · réserve 10 · portée 3** | 58/42 | **50/50** · 33 plies | ✅ référence |
+| 7×7 | 100 % Noir · 8 plies | — | dégénéré (percée en 2 glisses) |
+| 11×11 | 75 % Noir · 32 plies | — | avantage Noir, parties longues |
+| portée 2 | 42/58 · 49 plies | 19/81 · 83 plies | trop défensif |
+| portée 4 | 100 % Noir · 9 plies | — | dégénéré |
+| réserve 8 | 58/42 | — | neutre |
+| réserve 12 | 25/75 | 38/63 | penche Blanc |
+| occ1 (ko strict) | 50/50 | 44/56 | viable, pas de gain vs occ2 |
+
+Toutes les fins mesurées sont des percées — la domination de la percée est le prochain chantier de règles.
 
 ## Vers la plateforme
 
