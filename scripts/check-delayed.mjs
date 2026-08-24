@@ -6,8 +6,10 @@ const page = await browser.newPage({ viewport: { width: 1500, height: 900 } })
 await page.goto(URL, { waitUntil: 'networkidle' })
 
 const center = (row, col) => ({ x: col * 70 + 35, y: row * 70 + 35 })
+// hotseat : Noir en bas (flipped) → rangée plateau r rendue à l'écran en 8 - r
+const S = (r) => 8 - r
 const click = async (row, col) => {
-  await page.click('#board', { position: center(row, col) })
+  await page.click('#board', { position: center(S(row), col) })
   await page.waitForTimeout(250)
 }
 const status = () => page.textContent('#status')
