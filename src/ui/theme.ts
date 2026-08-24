@@ -26,8 +26,8 @@ export interface BoardPalette {
 
 export const BOARD: Record<ThemeName, BoardPalette> = {
   dark: {
-    // Granit gris moyen, distinct du travertin du mode jour
-    bg: '#5f5c55',
+    // Granit gris clair, distinct du travertin du mode jour
+    bg: '#6a675f',
     line: 'rgba(22, 20, 16, 0.55)',
     coord: 'rgba(240, 230, 210, 0.55)',
     campTopFill: 'rgba(138, 49, 32, 0.16)',

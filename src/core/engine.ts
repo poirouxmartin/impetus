@@ -420,7 +420,7 @@ function quiesce(st: St, alpha: number, beta: number, qd: number): number {
   for (const m of moves) {
     const u = applyMove(st, m)
     const sc = isWinAfter(st, m, u, me)
-      ? WIN - u.mc
+      ? WIN - MAX_PLY
       : -quiesce(st, -beta, -alpha, qd - 1)
     unmakeMove(st, m, u)
     if (sc >= beta) return beta

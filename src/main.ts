@@ -97,6 +97,7 @@ const avatarTop = document.getElementById('avatar-top') as HTMLElement
 const avatarBottom = document.getElementById('avatar-bottom') as HTMLElement
 const cadenceSel = document.getElementById('cadence') as HTMLSelectElement
 const cadenceLabel = document.getElementById('cadence-label') as HTMLElement
+const evalbarEl = document.getElementById('evalbar') as HTMLElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
 const quickLabel = quickBtn.querySelector('.t-label') as HTMLElement
@@ -573,6 +574,8 @@ avatarBottom.innerHTML = AVATAR_SVG
 function updateBanners(): void {
   avatarTop.dataset.color = colorAtTop()
   avatarBottom.dataset.color = colorAtBottom()
+  // la jauge se lit du côté du joueur : sa couleur occupe le bas
+  evalbarEl.classList.toggle('flip', colorAtBottom() === 'black')
   const me = auth?.name ?? profile.pseudo
   if (mode === 'ai') {
     pbnameTop.textContent = `IA · ${level.charAt(0).toUpperCase()}${level.slice(1)}`
@@ -1270,8 +1273,11 @@ function fmtScore(cp: number): string {
   return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
 }
 
-/** Le mat n'est affiché que s'il persiste sur deux profondeurs consécutives (anti-clignotement). */
+/** Le mat n'est affiché qu'après deux profondeurs consécutives, puis persiste (3 profondeurs sans mat le retirent). */
 let prevMateSide: '' | 'black' | 'white' = ''
+let mateStable = 0
+let noMateStable = 0
+let mateLatch: '' | 'black' | 'white' = ''
 
 function updateAnalysisPanel(): void {
   if (!liveOn) {
@@ -1280,6 +1286,9 @@ function updateAnalysisPanel(): void {
     infoEl.textContent = ''
     barWhite.style.height = '50%'
     prevMateSide = ''
+    mateStable = 0
+    noMateStable = 0
+    mateLatch = ''
     return
   }
   const a = analysis
@@ -1288,21 +1297,36 @@ function updateAnalysisPanel(): void {
     linesEl.innerHTML = ''
     infoEl.textContent = ''
     prevMateSide = ''
+    mateStable = 0
+    noMateStable = 0
+    mateLatch = ''
     return
   }
   const cp = a.scoreBlackCp
   const mateSide: '' | 'black' | 'white' =
     Math.abs(cp) >= MATE_THRESHOLD ? (cp > 0 ? 'black' : 'white') : ''
-  const mate = mateSide !== '' && mateSide === prevMateSide
+  if (mateSide) {
+    mateStable++
+    noMateStable = 0
+  } else {
+    noMateStable++
+    if (noMateStable >= 3) {
+      mateStable = 0
+      mateLatch = ''
+    }
+  }
+  if (mateSide && mateSide === prevMateSide && mateStable >= 2) mateLatch = mateSide
   prevMateSide = mateSide
-  evalLineEl.textContent = mate
-    ? `Percée forcée — ${cp > 0 ? 'Noir' : 'Blanc'} gagne`
-    : `Éval (Noir) : ${fmtCp(cp)}`
-  barWhite.style.height = mate
-    ? cp > 0
-      ? '0%'
-      : '100%'
-    : `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
+
+  if (mateLatch) {
+    const plies = WIN_SCORE - Math.abs(cp)
+    const moves = Math.max(1, Math.ceil(plies / 2))
+    evalLineEl.textContent = `Percée forcée en ~${moves} coups — ${mateLatch === 'black' ? 'Noir' : 'Blanc'} gagne`
+    barWhite.style.height = mateLatch === 'black' ? '0%' : '100%'
+  } else {
+    evalLineEl.textContent = `Éval (Noir) : ${fmtCp(cp)}`
+    barWhite.style.height = `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
+  }
   linesEl.innerHTML = a.lines
     .slice(0, 3)
     .map((l) => {
@@ -1310,7 +1334,8 @@ function updateAnalysisPanel(): void {
       return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>`
     })
     .join('')
-  infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
+  const nps = Math.round(a.nodes / Math.max(1, a.ms))
+  infoEl.textContent = `profondeur ${a.depth} · ${nps} k nœuds/s · ${(a.nodes / 1000).toFixed(0)}k nœuds`
 }
 
 
