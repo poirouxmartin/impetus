@@ -688,6 +688,8 @@ function render(now: number): void {
   const T = BOARD[currentTheme()]
   requestAnimationFrame(render)
   ctx.clearRect(0, 0, LOGICAL, LOGICAL)
+  ctx.fillStyle = T.bg
+  ctx.fillRect(0, 0, LOGICAL, LOGICAL)
 
   ctx.fillStyle = T.campTopFill
   ctx.fillRect(0, 0, LOGICAL, CELL)

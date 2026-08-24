@@ -12,6 +12,7 @@
     />
   </head>
   <body>
+    <div id="app">
     <nav id="topnav">
       <span class="brand">IMPETUS</span>
       <div class="nav-links">
@@ -34,17 +35,17 @@
             <p class="tagline">Glisse. Bloque. Percée.</p>
             <div class="tiles">
               <button class="tile" id="quick">
-                <span class="t-icon">⚡</span>
+                <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" stroke-linejoin="round"/></svg>
                 <span class="t-label">Partie rapide</span>
                 <small>classée si connecté · 5 min</small>
               </button>
               <button class="tile" id="tile-ai">
-                <span class="t-icon">🤖</span>
+                <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="14" height="12" rx="2"/><circle cx="9.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M12 7V4M8 4h8"/></svg>
                 <span class="t-label">Contre l'IA</span>
                 <small>3 niveaux · entraînement</small>
               </button>
               <button class="tile" id="tile-local">
-                <span class="t-icon">👥</span>
+                <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3.2"/><circle cx="16" cy="9" r="3.2"/><path d="M3.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5M11.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5"/></svg>
                 <span class="t-label">2 joueurs</span>
                 <small>même écran</small>
               </button>
@@ -53,12 +54,16 @@
 
           <div class="card wide">
             <h2>Salons ouverts <span id="online-count" class="pill"></span></h2>
+            <div class="table-scroll">
             <table id="lobby-table">
               <thead>
                 <tr><th>Code</th><th>Hôte</th><th>Adversaire</th><th>Cadence</th><th>Classé</th><th>Statut</th><th></th></tr>
               </thead>
-              <tbody id="lobby-body"></tbody>
+              <tbody id="lobby-body">
+                <tr><td colspan="7" class="empty">Aucun salon ouvert pour l'instant — crée le premier !</td></tr>
+              </tbody>
             </table>
+            </div>
             <details id="private-zone">
               <summary>Salon privé (code)</summary>
               <label class="check"><span>Cadence</span>
@@ -74,7 +79,7 @@
                 <button id="room-join">Rejoindre</button>
               </div>
             </details>
-            <div id="net-status"></div>
+            <div id="net-status">Multijoueur : lance `npm run server` pour ouvrir un salon.</div>
           </div>
 
           <aside class="card" style="max-width:300px">
@@ -108,6 +113,7 @@
                 </div>
               </div>
             </div>
+          </div>
             <aside id="panel">
               <div id="status"></div>
               <div id="clocks" hidden>
@@ -214,6 +220,10 @@
           </div>
         </div>
       </section>
+    </div>
+
+    </div>
+
     </div>
 
     <script type="module" src="/src/main.ts"></script>

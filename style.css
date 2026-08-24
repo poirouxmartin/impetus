@@ -3,6 +3,10 @@
   font-family: var(--font-body);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 [data-theme='light'] {
   color-scheme: light;
 }
@@ -279,8 +283,8 @@ button:disabled {
 }
 
 #evalbar {
-  width: 16px;
-  border-radius: 8px;
+  width: 12px;
+  border-radius: 999px;
   background: var(--evalbar-bg);
   border: 1px solid var(--line);
   position: relative;
@@ -311,6 +315,10 @@ button:disabled {
   position: relative;
 }
 
+.group label.check {
+  justify-content: flex-start;
+}
+
 .check {
   display: flex;
   gap: 8px;
@@ -318,6 +326,7 @@ button:disabled {
   font-size: 0.9rem;
   color: var(--text);
   cursor: pointer;
+  justify-content: flex-start;
 }
 
 .check input {
@@ -634,16 +643,14 @@ button.danger:hover:not(:disabled) {
 .hero {
   text-align: center;
   background: linear-gradient(160deg, var(--nav-active-bg), var(--bg-soft));
+  padding: 26px 20px 22px;
 }
 
 .logo {
   font-size: 2.4rem;
   letter-spacing: 0.55em;
-  margin: 6px 0 2px;
+  margin: 0 0 4px;
   color: var(--accent);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .tagline {
@@ -704,6 +711,10 @@ button.danger:hover:not(:disabled) {
   margin-left: 6px;
 }
 
+.pill:empty {
+  display: none;
+}
+
 .badge.wait {
   color: var(--draw);
 }
@@ -757,12 +768,61 @@ code {
 }
 
 .mini-auth.guest {
-  font-style: italic;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
 }
 
 #nav-auth {
   min-width: 110px;
   text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+#theme-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Lobby : hero pleine largeur, salons + compte côte à côte */
+#lobby {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+#lobby .hero {
+  grid-column: 1 / -1;
+}
+
+#lobby .card.wide {
+  grid-column: 1;
+}
+
+#lobby .auth-card {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+@media (max-width: 900px) {
+  #lobby {
+    grid-template-columns: 1fr;
+  }
+
+  #lobby .card.wide,
+  #lobby .auth-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
 }
 
 
@@ -930,9 +990,26 @@ button:focus:not(:focus-visible) {
     margin-left: auto;
   }
 
+  #game-wrap {
+    flex-direction: column;
+    align-items: center;
+  }
+
   #board-area {
     width: 100%;
-    flex-wrap: wrap;
+    max-width: 630px;
+    position: relative;
+  }
+
+  #evalbar {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 10px;
+    height: auto;
+    z-index: 6;
+    opacity: 0.9;
   }
 
   #panel {
