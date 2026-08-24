@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Marcellus&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -102,24 +102,32 @@
 
         <!-- ======= PARTIE EN COURS ======= -->
         <div id="game-wrap" hidden>
-          <div id="board-area">
-            <div id="evalbar"><div id="evalbar-white"></div></div>
-            <div id="board-stack">
-              <canvas id="board" width="630" height="630"></canvas>
-              <div id="banner" hidden>
-                <div class="card">
-                  <div class="title"></div>
-                  <div class="sub"></div>
+          <div id="board-column">
+            <div class="player-banner" id="pb-top">
+              <span class="avatar" id="avatar-top"></span>
+              <span class="pb-name" id="pbname-top">Adversaire</span>
+              <span class="pb-clock" id="bclock-top" hidden>–:––</span>
+            </div>
+            <div id="board-area">
+              <div id="evalbar"><div id="evalbar-white"></div></div>
+              <div id="board-stack">
+                <canvas id="board" width="630" height="630"></canvas>
+                <div id="banner" hidden>
+                  <div class="card">
+                    <div class="title"></div>
+                    <div class="sub"></div>
+                  </div>
                 </div>
               </div>
+            </div>
+            <div class="player-banner" id="pb-bottom">
+              <span class="avatar" id="avatar-bottom"></span>
+              <span class="pb-name" id="pbname-bottom">Joueur</span>
+              <span class="pb-clock" id="bclock-bottom" hidden>–:––</span>
             </div>
           </div>
             <aside id="panel">
               <div id="status"></div>
-              <div id="clocks" hidden>
-                <div id="clk-white" class="clk">–:––</div>
-                <div id="clk-black" class="clk">–:––</div>
-              </div>
               <div id="reserves"></div>
               <section class="group" id="settings-group">
                 <label id="side-label">
@@ -137,9 +145,17 @@
                     <option value="difficile">Difficile</option>
                   </select>
                 </label>
+                <label id="cadence-label">
+                  <span>Cadence</span>
+                  <select id="cadence">
+                    <option value="none" selected>Sans horloge</option>
+                    <option value="3+2">3 min + 2 s</option>
+                    <option value="5+0">5 min</option>
+                  </select>
+                </label>
                 <label class="check" id="delayed-label">
                   <input type="checkbox" id="delayed" />
-                  <span>Percée différée (expérimental)</span>
+                  <span>Percée différée — survivre à une riposte</span>
                 </label>
               </section>
               <section class="group">

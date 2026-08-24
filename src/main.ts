@@ -30,7 +30,7 @@ import {
 } from './platform/store'
 import { ReplayViewer } from './ui/replay'
 import { renderHistory, renderRatings } from './ui/profile'
-import { BOARD, currentTheme, initTheme, toggleTheme } from './ui/theme'
+import { BOARD, currentTheme, initTheme, toggleTheme, type BoardPalette } from './ui/theme'
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 
 const LOGICAL = 630
@@ -89,9 +89,14 @@ authLogoutBtn.addEventListener('click', () => {
   renderAuthZone()
 })
 const authStatusEl = document.getElementById('auth-status')!
-const clkBlack = document.getElementById('clk-black') as HTMLElement
-const clkWhite = document.getElementById('clk-white') as HTMLElement
-const clocksEl = document.getElementById('clocks') as HTMLElement
+const clkTop = document.getElementById('bclock-top') as HTMLElement
+const clkBottom = document.getElementById('bclock-bottom') as HTMLElement
+const pbnameTop = document.getElementById('pbname-top') as HTMLElement
+const pbnameBottom = document.getElementById('pbname-bottom') as HTMLElement
+const avatarTop = document.getElementById('avatar-top') as HTMLElement
+const avatarBottom = document.getElementById('avatar-bottom') as HTMLElement
+const cadenceSel = document.getElementById('cadence') as HTMLSelectElement
+const cadenceLabel = document.getElementById('cadence-label') as HTMLElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
 const quickLabel = quickBtn.querySelector('.t-label') as HTMLElement
@@ -140,6 +145,26 @@ let liveOn = false
 let online: { net: NetClient; code: string; color: Color; oppName: string } | null = null
 let currentNet: NetClient | null = null
 let clockSnap: { black: number; white: number; ts: number; turn: Color; running: boolean } | null = null
+
+interface LocalClock {
+  black: number
+  white: number
+  inc: number
+  last: number
+  flagged: boolean
+}
+let localClock: LocalClock | null = null
+let flagReason: string | null = null
+
+function initLocalClock(): void {
+  const v = cadenceSel.value
+  if (v === 'none') {
+    localClock = null
+    return
+  }
+  const [min, inc] = v.split('+').map(Number)
+  localClock = { black: min * 60_000, white: min * 60_000, inc: inc ?? 0, last: Date.now(), flagged: false }
+}
 let inQueue = false
 
 const store: StorageLike = window.localStorage
@@ -266,7 +291,10 @@ function handleNet(msg: ServerMsg): void {
       if (!currentNet) return
       online = { net: currentNet, code: msg.code, color: msg.color, oppName: msg.oppName }
       humanSide = msg.color
+      flipped = msg.color === 'black'
       setRules()
+      localClock = null
+      flagReason = null
       game = new Game()
       movesLog = []
       recorded = false
@@ -418,11 +446,14 @@ function refresh(): void {
 
   sideLabel.hidden = levelLabel.hidden = mode !== 'ai'
   delayedLabel.hidden = mode === 'online'
+  cadenceLabel.hidden = mode === 'online'
   swapBtn.hidden = !(game.swapAvailable() && (mode === 'hotseat' || pos.turn === humanSide))
   undoBtn.disabled = !game.canUndo() || aiThinking || mode === 'online'
+  updateBanners()
 
   if (w) {
-    const reasonText = (game.winnerReason && REASON[game.winnerReason]) || game.winnerReason || 'victoire'
+    const reasonText =
+      flagReason ?? ((game.winnerReason && REASON[game.winnerReason]) || game.winnerReason || 'victoire')
     let eloNote = ''
     if (!recorded) {
       const result: 'win' | 'loss' =
@@ -466,7 +497,6 @@ function refresh(): void {
 
   resignBtn.hidden = !(mode === 'online' && online && !w)
   rematchBtn.hidden = !(mode === 'online' && online && !!w)
-  clocksEl.hidden = mode !== 'online' || !clockSnap
 
   reservesEl.innerHTML = pipRow('black') + pipRow('white')
 }
@@ -477,27 +507,86 @@ function fmtClock(ms: number): string {
 }
 
 function renderClocks(): void {
-  if (mode !== 'online' || !clockSnap) return
-  const now = Date.now()
-  const live = (color: Color): number => {
-    const base = color === 'black' ? clockSnap!.black : clockSnap!.white
-    const running = clockSnap!.running && clockSnap!.turn === color
-    return Math.max(0, base - (running ? now - clockSnap!.ts : 0))
+  if (gameWrap.hidden) return
+  if (mode === 'online') {
+    if (!clockSnap) {
+      clkTop.hidden = true
+      clkBottom.hidden = true
+      return
+    }
+    const now = Date.now()
+    const live = (color: Color): number => {
+      const base = color === 'black' ? clockSnap!.black : clockSnap!.white
+      const running = clockSnap!.running && clockSnap!.turn === color
+      return Math.max(0, base - (running ? now - clockSnap!.ts : 0))
+    }
+    setClockEl(clkTop, colorAtTop(), live(colorAtTop()))
+    setClockEl(clkBottom, colorAtBottom(), live(colorAtBottom()))
+    return
   }
-  const b = live('black')
-  const w = live('white')
-  clkBlack.textContent = fmtClock(b)
-  clkWhite.textContent = fmtClock(w)
-  clkBlack.classList.toggle('active', clockSnap.turn === 'black' && clockSnap.running)
-  clkWhite.classList.toggle('active', clockSnap.turn === 'white' && clockSnap.running)
-  clkBlack.classList.toggle('low', b < 20000)
-  clkWhite.classList.toggle('low', w < 20000)
+  if (!localClock) {
+    clkTop.hidden = true
+    clkBottom.hidden = true
+    return
+  }
+  const now = Date.now()
+  const dt = now - localClock.last
+  localClock.last = now
+  if (!game.winner && !localClock.flagged) {
+    const t = game.position.turn
+    localClock[t] = Math.max(0, localClock[t] - dt)
+    if (localClock[t] === 0) {
+      localClock.flagged = true
+      flagReason = 'au temps'
+      game.winner = other(t)
+      game.winnerReason = null
+      refresh()
+    }
+  }
+  setClockEl(clkTop, colorAtTop(), localClock[colorAtTop()])
+  setClockEl(clkBottom, colorAtBottom(), localClock[colorAtBottom()])
+}
+
+function colorAtTop(): Color {
+  return flipped ? 'white' : 'black'
+}
+
+function colorAtBottom(): Color {
+  return flipped ? 'black' : 'white'
+}
+
+function setClockEl(el: HTMLElement, color: Color, ms: number): void {
+  el.hidden = false
+  el.textContent = fmtClock(ms)
+  const active = !game.winner && !localClock?.flagged && (mode === 'online' ? clockSnap?.turn === color && clockSnap.running : game.position.turn === color)
+  el.classList.toggle('active', !!active)
+  el.classList.toggle('low', ms < 20000)
 }
 
 setInterval(renderClocks, 250)
 
-function pipRow(color: Color): string {
-  const reserve = game.position.reserves[color]
+const AVATAR_SVG =
+  '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1.2-3.2 3.8-4.8 7-4.8s5.8 1.6 7 4.8"/></svg>'
+avatarTop.innerHTML = AVATAR_SVG
+avatarBottom.innerHTML = AVATAR_SVG
+
+function updateBanners(): void {
+  avatarTop.dataset.color = colorAtTop()
+  avatarBottom.dataset.color = colorAtBottom()
+  const me = auth?.name ?? profile.pseudo
+  if (mode === 'ai') {
+    pbnameTop.textContent = `IA · ${level.charAt(0).toUpperCase()}${level.slice(1)}`
+    pbnameBottom.textContent = me
+  } else if (mode === 'online' && online) {
+    pbnameTop.textContent = online.oppName ?? 'Adversaire'
+    pbnameBottom.textContent = me
+  } else {
+    pbnameTop.textContent = NAME[colorAtTop()]
+    pbnameBottom.textContent = NAME[colorAtBottom()]
+  }
+}
+
+function pipRow(color: Color): string {  const reserve = game.position.reserves[color]
   const captured = START_RESERVE - reserve - stonesOnBoard(color)
   const filled = Array.from({ length: reserve }, () => `<span class="pip ${color}"></span>`).join('')
   const ghosts = Array.from({ length: captured }, () => '<span class="pip ghost"></span>').join('')
@@ -612,6 +701,10 @@ function tryPlay(a: Action): void {
     }
   }
   if (!game.play(a)) return
+  if (localClock) {
+    localClock[other(game.position.turn)] += localClock.inc
+    localClock.last = Date.now()
+  }
   movesLog.push(a)
   if (move) anim = { ...move, start: performance.now() }
   lastMove = last
@@ -628,7 +721,28 @@ function resetView(): void {
 }
 
 function center(r: number, c: number): [number, number] {
-  return [c * CELL + CELL / 2, r * CELL + CELL / 2]
+  return [c * CELL + CELL / 2, vy(r) * CELL + CELL / 2]
+}
+
+/** Orientation : false = Blanc en bas (vue par défaut), true = Noir en bas (le joueur humain voit sa rangée en bas). */
+let flipped = false
+function vy(r: number): number {
+  return flipped ? SIZE - 1 - r : r
+}
+
+function drawCoords(T: BoardPalette): void {
+  ctx.fillStyle = T.coord
+  ctx.font = `${Math.max(10, CELL * 0.17)}px Marcellus, serif`
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'top'
+  for (let r = 0; r < SIZE; r++) {
+    ctx.fillText(String(r + 1), 4, vy(r) * CELL + 3)
+  }
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'bottom'
+  for (let c = 0; c < SIZE; c++) {
+    ctx.fillText('abcdefghi'[c], (c + 1) * CELL - 4, LOGICAL - 3)
+  }
 }
 
 function stoneGradient(x: number, y: number, radius: number, color: Color): CanvasGradient {
@@ -707,14 +821,16 @@ function render(now: number): void {
   ctx.fillStyle = T.bg
   ctx.fillRect(0, 0, LOGICAL, LOGICAL)
 
+  const yB = vy(0) * CELL
+  const yW = vy(SIZE - 1) * CELL
   ctx.fillStyle = T.campTopFill
-  ctx.fillRect(0, 0, LOGICAL, CELL)
+  ctx.fillRect(0, yB, LOGICAL, CELL)
   ctx.fillStyle = T.campBottomFill
-  ctx.fillRect(0, (SIZE - 1) * CELL, LOGICAL, CELL)
+  ctx.fillRect(0, yW, LOGICAL, CELL)
   ctx.fillStyle = T.filetTop
-  ctx.fillRect(0, CELL - 1.5, LOGICAL, 1.5)
+  ctx.fillRect(0, flipped ? yB : yB + CELL - 1.5, LOGICAL, 1.5)
   ctx.fillStyle = T.filetBottom
-  ctx.fillRect(0, (SIZE - 1) * CELL, LOGICAL, 1.5)
+  ctx.fillRect(0, flipped ? yW + CELL - 1.5 : yW, LOGICAL, 1.5)
 
   ctx.strokeStyle = T.line
   ctx.lineWidth = 1
@@ -728,6 +844,8 @@ function render(now: number): void {
     ctx.lineTo(LOGICAL, i * CELL + 0.5)
     ctx.stroke()
   }
+
+  drawCoords(T)
 
   let k = 1
   if (anim) {
@@ -831,9 +949,9 @@ function hitCell(e: PointerEvent): { r: number; c: number } | null {
   const x = ((e.clientX - rect.left) * LOGICAL) / rect.width
   const y = ((e.clientY - rect.top) * LOGICAL) / rect.height
   const c = Math.floor(x / CELL)
-  const r = Math.floor(y / CELL)
-  if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return null
-  return { r, c }
+  const rRaw = Math.floor(y / CELL)
+  if (rRaw < 0 || rRaw >= SIZE || c < 0 || c >= SIZE) return null
+  return { r: flipped ? SIZE - 1 - rRaw : rRaw, c }
 }
 
 canvas.addEventListener('pointerdown', (e) => {
@@ -890,6 +1008,13 @@ undoBtn.addEventListener('click', () => {
   if (aiThinking || mode === 'online') return
   game.undo()
   if (mode === 'ai' && game.canUndo() && game.position.turn !== humanSide) game.undo()
+  if (localClock?.flagged) {
+    // reprise après un drapeau : minimum 15 s pour éviter la boucle flag/undo
+    if (localClock.black === 0) localClock.black = 15_000
+    if (localClock.white === 0) localClock.white = 15_000
+    localClock.flagged = false
+  }
+  flagReason = null
   movesLog.length = Math.min(movesLog.length, game.position.moveCount)
   resetView()
   afterMove()
@@ -901,6 +1026,8 @@ newBtn.addEventListener('click', () => {
     return
   }
   applyRuleVariant()
+  initLocalClock()
+  flagReason = null
   game = new Game()
   gameId++
   recorded = false
@@ -936,8 +1063,11 @@ function showGame(): void {
 function startAiGame(): void {
   mode = 'ai'
   applyRuleVariant()
+  initLocalClock()
+  flagReason = null
   game = new Game()
   humanSide = sideSelEl.value as Color
+  flipped = humanSide === 'black'
   level = levelSelEl.value as Level
   gameId++
   recorded = false
@@ -952,7 +1082,10 @@ function startAiGame(): void {
 function startLocalGame(): void {
   mode = 'hotseat'
   applyRuleVariant()
+  initLocalClock()
+  flagReason = null
   game = new Game()
+  flipped = true
   gameId++
   recorded = false
   movesLog = []
@@ -1040,6 +1173,7 @@ levelSelEl.addEventListener('change', () => {
 
 sideSelEl.addEventListener('change', () => {
   humanSide = sideSelEl.value as Color
+  if (mode === 'ai') flipped = humanSide === 'black'
 })
 
 /* ==================== NAVIGATION & VUES ==================== */
@@ -1136,12 +1270,16 @@ function fmtScore(cp: number): string {
   return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
 }
 
+/** Le mat n'est affiché que s'il persiste sur deux profondeurs consécutives (anti-clignotement). */
+let prevMateSide: '' | 'black' | 'white' = ''
+
 function updateAnalysisPanel(): void {
   if (!liveOn) {
     evalLineEl.textContent = 'Analyse désactivée'
     linesEl.innerHTML = ''
     infoEl.textContent = ''
     barWhite.style.height = '50%'
+    prevMateSide = ''
     return
   }
   const a = analysis
@@ -1149,10 +1287,14 @@ function updateAnalysisPanel(): void {
     evalLineEl.textContent = '…'
     linesEl.innerHTML = ''
     infoEl.textContent = ''
+    prevMateSide = ''
     return
   }
   const cp = a.scoreBlackCp
-  const mate = Math.abs(cp) >= MATE_THRESHOLD
+  const mateSide: '' | 'black' | 'white' =
+    Math.abs(cp) >= MATE_THRESHOLD ? (cp > 0 ? 'black' : 'white') : ''
+  const mate = mateSide !== '' && mateSide === prevMateSide
+  prevMateSide = mateSide
   evalLineEl.textContent = mate
     ? `Percée forcée — ${cp > 0 ? 'Noir' : 'Blanc'} gagne`
     : `Éval (Noir) : ${fmtCp(cp)}`

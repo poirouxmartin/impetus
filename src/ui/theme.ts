@@ -5,6 +5,7 @@ const STORAGE_KEY = 'impetus.theme.v1'
 export interface BoardPalette {
   bg: string
   line: string
+  coord: string
   campTopFill: string
   campBottomFill: string
   filetTop: string
@@ -25,10 +26,12 @@ export interface BoardPalette {
 
 export const BOARD: Record<ThemeName, BoardPalette> = {
   dark: {
-    bg: '#6E6858',
-    line: 'rgba(30, 27, 20, 0.55)',
-    campTopFill: 'rgba(138, 49, 32, 0.12)',
-    campBottomFill: 'rgba(110, 130, 100, 0.12)',
+    // Granit gris moyen, distinct du travertin du mode jour
+    bg: '#5f5c55',
+    line: 'rgba(22, 20, 16, 0.55)',
+    coord: 'rgba(240, 230, 210, 0.55)',
+    campTopFill: 'rgba(138, 49, 32, 0.16)',
+    campBottomFill: 'rgba(110, 130, 100, 0.14)',
     filetTop: 'rgba(212, 175, 110, 0.55)',
     filetBottom: 'rgba(212, 175, 110, 0.55)',
     placeDot: 'rgba(240, 230, 210, 0.45)',
@@ -45,8 +48,10 @@ export const BOARD: Record<ThemeName, BoardPalette> = {
     whiteRim: 'rgba(40, 32, 20, 0.60)',
   },
   light: {
+    // Travertin
     bg: '#B5A789',
     line: 'rgba(70, 58, 40, 0.50)',
+    coord: 'rgba(50, 40, 24, 0.55)',
     campTopFill: 'rgba(138, 49, 32, 0.10)',
     campBottomFill: 'rgba(74, 107, 84, 0.12)',
     filetTop: 'rgba(138, 49, 32, 0.65)',

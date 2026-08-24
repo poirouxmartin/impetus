@@ -39,7 +39,7 @@ canvas {
   box-shadow: var(--shadow-card);
   touch-action: manipulation;
   max-width: min(92vw, 630px);
-  max-height: calc(100vh - 230px);
+  max-height: calc(100vh - 290px);
   min-width: 300px;
   height: auto;
 }
@@ -553,34 +553,6 @@ button.danger:hover:not(:disabled) {
   background: var(--red-bg);
 }
 
-#clocks {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.clk {
-  font-variant-numeric: tabular-nums;
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 6px 18px;
-  color: var(--muted);
-  transition: all 0.2s;
-}
-
-.clk.active {
-  color: var(--text);
-  border-color: var(--accent);
-}
-
-.clk.low {
-  color: var(--red);
-  border-color: var(--red);
-}
-
 #auth-status {
   font-size: var(--fs-xs);
   color: var(--muted);
@@ -797,19 +769,80 @@ code {
 }
 
 .logo {
-  font-weight: 600;
+  font-weight: 400;
   text-transform: uppercase;
 }
 
-.clk,
-code {
-  font-family: var(--font-mono);
+/* ==================== BANNIÈRES JOUEURS ==================== */
+
+#board-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 6px 12px;
+  min-height: 40px;
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.avatar[data-color='black'] {
+  background: var(--pip-fill);
+  color: var(--muted);
+  border: 1px solid var(--pip-rim);
+}
+
+.avatar[data-color='white'] {
+  background: var(--stone-light);
+  color: #4a4438;
+  border: 1px solid var(--pip-rim);
+}
+
+.pb-name {
+  font-weight: 700;
+  font-size: var(--fs-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pb-clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-lg);
+  color: var(--muted);
+  transition: color 0.2s;
+}
+
+.pb-clock.active {
+  color: var(--text);
+}
+
+.pb-clock.low {
+  color: var(--red);
 }
 
 :root {
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-display: 'Cinzel', serif;
-  --font-mono: 'Space Mono', monospace;
+  /* Police unique — capitales romaines (inscription lapidaire) */
+  --font-body: 'Marcellus', 'Georgia', serif;
+  --font-display: 'Marcellus', 'Georgia', serif;
+  --font-mono: 'Marcellus', 'Georgia', serif;
 
   /* Échelles partagées */
   --r-sm: 6px;
@@ -978,6 +1011,11 @@ button:focus:not(:focus-visible) {
     width: 100%;
     max-width: 630px;
     position: relative;
+  }
+
+  #board-column {
+    width: 100%;
+    max-width: 630px;
   }
 
   #evalbar {
