@@ -3,6 +3,10 @@
   font-family: var(--font-body);
 }
 
+[data-theme='light'] {
+  color-scheme: light;
+}
+
 body {
   margin: 0;
   background: radial-gradient(1200px 800px at 50% -10%, var(--bg-grad-a), var(--bg-grad-b));
@@ -27,16 +31,9 @@ h1 {
   color: var(--text);
 }
 
-#layout {
+#game-wrap {
   display: flex;
-  gap: 22px;
-  align-items: flex-start;
   justify-content: center;
-  flex-wrap: wrap;
-}
-
-#board-wrap {
-  position: relative;
 }
 
 canvas {
@@ -44,9 +41,11 @@ canvas {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--bg-soft);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-card);
   touch-action: manipulation;
   max-width: min(92vw, 630px);
+  max-height: calc(100vh - 230px);
+  min-width: 300px;
   height: auto;
 }
 
@@ -134,7 +133,7 @@ canvas {
 
 .tag.white::before {
   background: var(--stone-light);
-  border: 1px solid #8a8e95;
+  border: 1px solid var(--pip-rim);
 }
 
 .pips {
@@ -156,7 +155,7 @@ canvas {
 
 .pip.white {
   background: var(--stone-light);
-  border: 1px solid #8a8e95;
+  border: 1px solid var(--pip-rim);
 }
 
 .pip.ghost {
@@ -240,7 +239,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 12, 15, 0.55);
+  background: var(--veil);
   border-radius: 8px;
 }
 
@@ -250,12 +249,12 @@ button:disabled {
 
 #banner .card {
   background: var(--surface);
-  border: 1px solid #3d4450;
+  border: 1px solid var(--line);
   border-radius: 12px;
   padding: 26px 38px;
   text-align: center;
   animation: pop 0.25s ease-out;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-card);
 }
 
 @keyframes pop {
@@ -305,7 +304,7 @@ button:disabled {
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(126, 231, 135, 0.55);
+  background: var(--accent);
 }
 
 #board-stack {
@@ -787,6 +786,7 @@ code {
 
   /* Marbre Romain · nuit */
   --bg: #141210;
+  --veil: rgba(10, 8, 6, 0.6);
   --bg-grad-a: #201b15;
   --bg-grad-b: #100e0c;
   --bg-soft: #171411;
@@ -820,6 +820,12 @@ code {
 
 [data-theme='light'] {
   /* Marbre Romain · jour */
+  --veil: rgba(60, 50, 30, 0.35);
+}
+
+[data-theme='light'] {
+  /* Marbre Romain · jour */
+  --veil: rgba(60, 50, 30, 0.35);
   --bg: #efe9dc;
   --bg-grad-a: #f7f2e7;
   --bg-grad-b: #e6dcc7;
@@ -851,3 +857,105 @@ code {
   --stone-light-dim: #d8cfbc;
   --shadow-card: 0 8px 24px rgba(90, 70, 40, 0.18);
 }
+
+/* ==================== RESPONSIVE & FINITIONS ==================== */
+
+#topnav {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#controls-online {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#auth-form input {
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.92rem;
+}
+
+#auth-form input::placeholder {
+  color: var(--muted-2);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+#hist-table,
+#lobby-table {
+  min-width: 620px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  #app {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  #topnav {
+    padding: 10px 14px;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  #theme-toggle {
+    margin-left: auto;
+  }
+
+  #board-area {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  #panel {
+    width: 100%;
+    max-width: 630px;
+  }
+
+  .hero {
+    padding: 24px 16px 16px;
+  }
+
+  .tile {
+    min-width: 140px;
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
