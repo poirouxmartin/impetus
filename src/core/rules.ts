@@ -9,15 +9,28 @@ export let START_RESERVE = 10
 export let MAX_RANGE = 3
 /** Anti-répétition : une position identique ne peut pas être créée une (N+1)e fois. */
 export let MAX_OCCURRENCES = 2
+/** Pierres requises simultanément sur la rangée adverse pour la percée. */
+export let BREAKTHROUGH = 1
+/** Percée différée : la pierre sur la rangée adverse doit survivre à une réponse adverse. */
+export let BREAKTHROUGH_DELAY = false
 
 export interface RuleConfig {
   size: number
   reserve: number
   range: number
   occurrences: number
+  breakthrough: number
+  breakthroughDelay: boolean
 }
 
-export const DEFAULT_RULES: RuleConfig = { size: 9, reserve: 10, range: 3, occurrences: 2 }
+export const DEFAULT_RULES: RuleConfig = {
+  size: 9,
+  reserve: 10,
+  range: 3,
+  occurrences: 2,
+  breakthrough: 1,
+  breakthroughDelay: false,
+}
 
 /** Applique une configuration de règles ; sans argument, restaure les règles standard (9×9, réserve 10, portée 3). */
 export function setRules(cfg?: Partial<RuleConfig>): void {
@@ -26,6 +39,8 @@ export function setRules(cfg?: Partial<RuleConfig>): void {
   START_RESERVE = r.reserve
   MAX_RANGE = r.range
   MAX_OCCURRENCES = r.occurrences
+  BREAKTHROUGH = r.breakthrough
+  BREAKTHROUGH_DELAY = r.breakthroughDelay
 }
 
 export interface Position {
@@ -201,17 +216,36 @@ export function applyAction(pos: Position, a: Action): Position {
   return { cells, reserves, turn, moveCount: pos.moveCount + 1, swapped }
 }
 
+/** Percée : `BREAKTHROUGH` pierres de `c` simultanément sur sa rangée cible. */
+export function hasBreakthrough(pos: Position, c: Color): boolean {
+  const tr = targetRow(c)
+  let n = 0
+  for (let col = 0; col < SIZE; col++) {
+    if (pos.cells[idx(tr, col)] === c && ++n >= BREAKTHROUGH) return true
+  }
+  return false
+}
+
+/**
+ * Vainqueur par percée après le coup de `mover`.
+ * Immédiat : `mover` atteint la rangée adverse. Différé : le trait (other(mover))
+ * occupe déjà sa rangée cible — ses pierres y sont arrivées un coup plus tôt et ont
+ * survécu à la riposte de `mover`. Pur positionnel : aucune donnée supplémentaire.
+ */
+function percéeWinner(pos: Position, mover: Color): Color | null {
+  if (BREAKTHROUGH_DELAY) return hasBreakthrough(pos, other(mover)) ? other(mover) : null
+  return hasBreakthrough(pos, mover) ? mover : null
+}
+
 /**
  * Gagnant après application d'une action par `mover`, sans considération d'historique :
- * percée (pierre sur la rangée adverse), anéantissement (plus de pierres adverses
+ * percée (pierres sur la rangée adverse), anéantissement (plus de pierres adverses
  * sur le plateau ni en réserve), immobilisation brute (adversaire sans coup légal).
  */
 export function winnerAfter(pos: Position, mover: Color): Color | null {
   const opp = other(mover)
-  const tr = targetRow(mover)
-  for (let col = 0; col < SIZE; col++) {
-    if (pos.cells[idx(tr, col)] === mover) return mover
-  }
+  const pw = percéeWinner(pos, mover)
+  if (pw) return pw
   let oppStones = 0
   for (const c of pos.cells) if (c === opp) oppStones++
   if (oppStones === 0 && pos.reserves[opp] === 0) return mover
@@ -236,10 +270,8 @@ export function outcome(
   mover: Color,
   reps: ReadonlyMap<string, number>,
 ): Outcome | null {
-  const tr = targetRow(mover)
-  for (let col = 0; col < SIZE; col++) {
-    if (pos.cells[idx(tr, col)] === mover) return { winner: mover, reason: 'percée' }
-  }
+  const pw = percéeWinner(pos, mover)
+  if (pw) return { winner: pw, reason: 'percée' }
   const opp = other(mover)
   let oppStones = 0
   for (const c of pos.cells) if (c === opp) oppStones++

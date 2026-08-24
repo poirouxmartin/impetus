@@ -4,6 +4,7 @@ import {
   Position,
   SIZE,
   applyAction,
+  hasBreakthrough,
   idx,
   legalActions,
   other,
@@ -71,7 +72,19 @@ export function search(pos: Position, depth: number, alpha: number, beta: number
 }
 
 export function isImmediateWin(pos: Position, a: Action): boolean {
-  return winnerAfter(applyAction(pos, a), pos.turn) === pos.turn
+  const next = applyAction(pos, a)
+  const me = pos.turn
+  const w = winnerAfter(next, me)
+  if (w) return w === me
+  // Percée différée : gagnant si aucune riposte adverse n'évacue la menace.
+  if (!hasBreakthrough(next, me)) return false
+  const opp = other(me)
+  for (const r of legalActions(next)) {
+    const after = applyAction(next, r)
+    if (winnerAfter(after, opp) === opp) return false
+    if (!hasBreakthrough(after, me)) return false
+  }
+  return true
 }
 
 function pickRandom<T>(items: T[]): T {

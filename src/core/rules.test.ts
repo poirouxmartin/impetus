@@ -234,6 +234,36 @@ describe('divers', () => {
     expect(new Game().winner).toBeNull()
   })
 
+  it('percée différée : la pierre doit survivre à une riposte', () => {
+    try {
+      setRules({ breakthroughDelay: true })
+      // Noir vient d'arriver sur la rangée blanche : pas de victoire immédiate
+      const arrival = { ...initialState(), cells: board({ 8: '....b....' }) }
+      expect(winnerAfter(arrival, 'black')).toBeNull()
+      // Blanc passe son tour de la capturer : la percée de Noir est confirmée
+      expect(winnerAfter(arrival, 'white')).toBe('black')
+      expect(outcome(arrival, 'white', new Map())).toEqual({ winner: 'black', reason: 'percée' })
+      // Blanc capture : plus aucune percée
+      const cleared = { ...initialState(), cells: board({ 8: '....w....' }) }
+      expect(winnerAfter(cleared, 'white')).toBeNull()
+    } finally {
+      setRules()
+    }
+  })
+
+  it('percée paramétrable : BREAKTHROUGH pierres requises sur la rangée adverse', () => {
+    try {
+      setRules({ breakthrough: 2 })
+      const one = { ...initialState(), cells: board({ 8: '....b....' }) }
+      expect(winnerAfter(one, 'black')).toBeNull()
+      const two = { ...initialState(), cells: board({ 8: '.b..b....' }) }
+      expect(winnerAfter(two, 'black')).toBe('black')
+      expect(outcome(two, 'black', new Map())).toEqual({ winner: 'black', reason: 'percée' })
+    } finally {
+      setRules()
+    }
+  })
+
   it('setRules applique une variante puis restaure le standard', () => {
     try {
       setRules({ size: 7, reserve: 6, range: 2, occurrences: 1 })

@@ -8,18 +8,23 @@ interface Variant {
   reserve?: number
   range?: number
   occurrences?: number
+  breakthrough?: number
+  breakthroughDelay?: boolean
 }
 
 const VARIANTS: Variant[] = [
-  { name: 'référence 9·r10·p3·occ2' },
-  { name: '7×7', size: 7 },
-  { name: '11×11', size: 11 },
-  { name: 'portée 2', range: 2 },
-  { name: 'portée 4', range: 4 },
-  { name: 'réserve 8', reserve: 8 },
-  { name: 'réserve 12', reserve: 12 },
-  { name: 'ko strict occ1', occurrences: 1 },
-  { name: 'occ3', occurrences: 3 },
+  { name: 'référence 9·r10·p3·b1' },
+  { name: 'percée×2', breakthrough: 2 },
+  { name: 'réserve 6', reserve: 6 },
+  { name: 'réserve 7', reserve: 7 },
+  { name: 'percée×2·r7', breakthrough: 2, reserve: 7 },
+  { name: 'percée×2·r6', breakthrough: 2, reserve: 6 },
+  { name: 'percée×2·r12', breakthrough: 2, reserve: 12 },
+  { name: 'percée différée', breakthroughDelay: true },
+  { name: 'différée·r7', breakthroughDelay: true, reserve: 7 },
+  { name: 'différée·r6', breakthroughDelay: true, reserve: 6 },
+  { name: 'réserve 5', reserve: 5 },
+  { name: 'réserve 4', reserve: 4 },
 ]
 
 interface Stats {

@@ -36,7 +36,9 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 
 - ~~Taille du plateau, taille de réserve, portée de glisse~~ → **tranché par sweep self-play (v1.2)** : 9×9 / réserve 10 / portée 3 est la seule config équilibrée testée (voir « Chiffres mesurés »)
 - ~~Forme exacte de l'anti-répétition~~ → occ2 (règle des 3 positions) conservée ; occ1 (ko strict) viable mais sans gain mesuré
-- **La percée domine** : 100 % des fins de parties en self-play, tous niveaux. Anéantissement et immobilisation ne sortent jamais. Faut-il durcir la percée (2 pierres sur la rangée adverse ?) ou booster les captures pour équilibrer les motifs de fin ?
+- ~~Nulles, parties infinies, gain forcé à l'ouverture~~ → **aucun des trois n'existe** : pas de règle de nulle (le jeu est toujours décisif), terminaison garantie par l'anti-répétition (états finis × 2 occurrences max), aucun gain forcé détecté à l'ouverture (profondeur 13 : score ≈ 0 ; première percée forcée détectée entre les coups 25 et 52, moyenne 37)
+- **Adopter la percée différée ?** (v1.2 candidate) : +33 % de longueur de partie, contrejeu défensif riche, équilibre à confirmer en humain + IA recalibrée (l'évaluation actuelle récompense la progression, pas la menace d'arrivée suspendue)
+- Faut-il diversifier les fins de partie ? Anéantissement/immobilisation restent des garde-fous : les rendre fréquentes exigerait de ralentir le jeu (percée×2) au prix de l'équilibre
 
 ## Outils
 
@@ -72,6 +74,21 @@ Le niveau **Difficile** utilise le moteur d'analyse (négamax + table de transpo
 | occ1 (ko strict) | 50/50 | 44/56 | viable, pas de gain vs occ2 |
 
 Toutes les fins mesurées sont des percées — la domination de la percée est le prochain chantier de règles.
+
+### Percée & matériel (sweep v2, difficile avec swap, 16–32 parties)
+
+| Variante | Noir/Blanc | pliesø | Fins | Verdict |
+|---|---|---|---|---|
+| **référence b1·r10** | **53/47** | 40 | percée ×32 | ✅ équilibre de référence |
+| percée×2 | 13/88 · 38/63 | 42–80 | percée + anéanti 1–2 | surcorrige côté défense, parties ×2 |
+| percée différée (survie 1 coup) | 41/59 | 53 | percée ×32 | +33 % de longueur, léger biais Blanc (à valider : IA non recalibrée) |
+| différée·r7 | 28/72 | 37 | percée ×32 | biais Blanc net |
+| différée·r6 | 44/56 | 31 | percée ×32 | proche équilibre |
+| réserve 7 | 50/50 | 29 | percée ×16 | variante tempo valide |
+| réserve 6 | 56/44 | 22 | percée ×16 | court, un peu Noir |
+| réserves 5 / 4 | 63/37 · 56/44 | ~19 | percée ×16 | parties encore plus rapides, percée toujours reine |
+
+**Constats structurels** : la percée fait 100 % des fins quelles que soient les réserves (4–12) — capturer reste volontaire et risqué, l'attrition n'est jamais rentable avant la percée. Anéantissement et immobilisation sont des **garde-fous anti-dégénéré**, pas des chemins de victoire réalistes en l'état. La percée différée est la meilleure piste de profondeur mesurée à ce jour : elle force le défenseur à répondre aux arrivées (doubles menaces, sacrifices protégés, échanges sur la rangée d'arrivée) sans casser l'équilibre.
 
 ## Vers la plateforme
 
