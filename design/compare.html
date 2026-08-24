@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Impetus — Comparatif DA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&family=Unbounded:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============ BASE COMMUNE ============ */
+*{box-sizing:border-box;margin:0}
+body{background:#0c0c0c;color:#ddd;font-family:Inter,sans-serif;padding-bottom:80px}
+.compare-head{max-width:1100px;margin:0 auto;padding:34px 20px 10px}
+.compare-head h1{font-size:1.5rem;font-weight:600}
+.compare-head p{color:#888;margin-top:6px;line-height:1.6}
+
+.mock{margin:40px auto 0;max-width:1150px;border-radius:14px;overflow:hidden;
+      box-shadow:0 30px 80px rgba(0,00,.55);border:1px solid #222}
+.mock-label{padding:12px 22px;font-size:.8rem;letter-spacing:.25em;text-transform:uppercase;background:#000;color:#aaa}
+
+/* tokens par thème */
+[data-theme="marbre"]{
+  --bg:#141210; --surface:#1E1B16; --surface2:#26221B; --line:#3A342A;
+  --paper:#EFE8DA; --ink:#171310; --accent:#C29B4A; --accent2:#8A3120;
+  --text:#EDE6D6; --muted:#A79E8D; --win:#7FA06A;
+  --font-display:'Cinzel',serif; --font-body:'Inter',sans-serif; --font-mono:'Space Mono',monospace;
+  --radius:10px; --border-w:1px; --shadow:none;
+}
+[data-theme="editorial"]{
+  --bg:#F2EEE6; --surface:#FBF9F4; --surface2:#EAE4D6; --line:#171310;
+  --paper:#FFFFFF; --ink:#17130E; --accent:#E0491F; --accent2:#4A7C59;
+  --text:#17130E; --muted:#6E6759; --win:#4A7C59;
+  --font-display:'Fraunces',serif; --font-body:'Space Grotesk',sans-serif; --font-mono:'Space Mono',monospace;
+  --radius:4px; --border-w:2px; --shadow:4px 4px 0 var(--ink);
+}
+[data-theme="minuit"]{
+  --bg:#0F1320; --surface:#151B2B; --surface2:#1B2338; --line:#27304A;
+  --paper:#F5F1E8; --ink:#0F1320; --accent:#FF5A3C; --accent2:#5AB0FF;
+  --text:#EEF1F7; --muted:#8891A5; --win:#57D9A3;
+  --font-display:'Unbounded',sans-serif; --font-body:'Inter',sans-serif; --font-mono:'Space Mono',monospace;
+  --radius:14px; --border-w:1px; --shadow:0 10px 40px rgba(0,0,0,.45);
+}
+
+/* ============ MAQUETTE PARTAGÉE ============ */
+.mock .page{background:var(--bg);color:var(--text);font-family:var(--font-body);
+            min-height:640px;display:flex;flex-direction:column}
+.nav{display:flex;align-items:center;justify-content:space-between;
+     padding:14px 24px;background:var(--surface);border-bottom:var(--border-w) solid var(--line)}
+.brand{font-family:var(--font-display);letter-spacing:.35em;font-weight:700;font-size:1rem;color:var(--text)}
+.nav-links{display:flex;gap:4px}
+.nav-links span{padding:7px 14px;border-radius:var(--radius);font-size:.85rem;color:var(--muted)}
+.nav-links span.on{color:var(--accent);background:var(--surface2)}
+.who{font-size:.8rem;color:var(--muted)}
+.who b{color:var(--accent)}
+
+.hero{padding:34px 28px 22px;text-align:center}
+.logo{font-family:var(--font-display);font-size:2.2rem;letter-spacing:.5em;color:var(--text)}
+.tagline{color:var(--muted);margin-top:6px;font-size:.95rem}
+.tiles{display:flex;gap:14px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+.tile{width:180px;padding:18px 14px;background:var(--surface);border:var(--border-w) solid var(--line);
+      border-radius:var(--radius);box-shadow:var(--shadow);text-align:left;cursor:pointer}
+.tile:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tile .t-icon{font-family:var(--font-mono);font-size:.8rem;color:var(--accent);display:block;margin-bottom:8px}
+.tile .t-label{font-weight:700;display:block;font-size:1rem}
+.tile small{color:var(--muted);font-size:.72rem;display:block;margin-top:4px}
+
+.section{padding:18px 28px}
+.section h2{font-size:.85rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{text-align:left;color:var(--muted);font-weight:500;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.badge{padding:3px 10px;border-radius:999px;font-size:.72rem;border:1px solid var(--line)}
+.b-wait{color:var(--accent);border-color:var(--accent)}
+.b-play{color:var(--muted)}
+.btn{display:inline-block;padding:7px 16px;border-radius:var(--radius);
+     border:var(--border-w) solid var(--accent);color:var(--accent);
+     font-weight:700;font-size:.8rem;background:transparent}
+.btn.solid{background:var(--accent);color:var(--bg)}
+
+.game{display:flex;gap:20px;padding:20px 28px 30px;align-items:flex-start}
+.board-wrap{flex:0 0 380px}
+.clocks{display:flex;justify-content:space-between;margin-bottom:10px}
+.clk{font-family:var(--font-mono);font-size:1.15rem;font-weight:700;
+     padding:6px 16px;border:var(--border-w) solid var(--line);border-radius:var(--radius);color:var(--muted)}
+.clk.on{color:var(--text);border-color:var(--accent)}
+.board{aspect-ratio:1;border:var(--border-w) solid var(--line);border-radius:var(--radius);
+       position:relative;overflow:hidden;
+       background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        var(--paper);
+       background-size:11.11% 11.11%}
+.stone{position:absolute;width:8.5%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%)}
+.stone.black{background:radial-gradient(circle at 32% 30%,#4a443a,#100d09 70%);
+             box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.stone.white{background:radial-gradient(circle at 32% 30%,#fffdf6,#cfc8b8 75%);
+             box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.panel{flex:1;display:flex;flex-direction:column;gap:14px}
+.cardp{background:var(--surface);border:var(--border-w) solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.status{font-weight:600}
+.hintline{color:var(--muted);font-size:.78rem;line-height:1.55}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.palette{display:flex;gap:8px;margin-top:14px;align-items:center}
+.sw{width:26px;height:26px;border-radius:6px;border:1px solid var(--line)}
+.fname{font-size:.72rem;color:var(--muted);margin-left:8px}
+@media(max-width:900px){.game{flex-direction:column}.board-wrap{flex:none;width:100%}}
+</style>
+</head>
+<body>
+
+<div class="compare-head">
+  <h1>Impetus — trois directions artistiques</h1>
+  <p>Même écran rendu trois fois : accueil (tuiles + salons ouverts) puis vue de partie (horloges, plateau, panneau).
+     Scrolle, compare, choisis. Chaque thème est piloté par des variables CSS : le choix final s'appliquera tel quel au site.</p>
+</div>
+
+<!-- ================= MARBRE ROMAIN ================= -->
+<section class="mock" data-theme="marbre">
+  <div class="mock-label">DA 1 — Marbre Romain</div>
+  <div class="page">
+    <div class="nav"><span class="brand">IMPETUS</span>
+      <span class="nav-links"><span class="on">Jouer</span><span>Parties</span><span>Profil</span></span>
+      <span class="who">Martin · <b>1218</b></span></div>
+    <div class="hero">
+      <div class="logo">IMPETUS</div>
+      <div class="tagline">Glisse. Bloque. Percée.</div>
+      <div class="tiles">
+        <button class="tile"><span class="t-icon">I·R</span><span class="t-label">Partie rapide</span><small>classé · 5 min</small></button>
+        <button class="tile"><span class="t-icon">IA</span><span class="t-label">Contre l'IA</span><small>3 niveaux</small></button>
+        <button class="tile"><span class="t-icon">II</span><span class="t-label">2 joueurs</span><small>même écran</small></button>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Salons ouverts · 4 en ligne</h2>
+      <table>
+        <tr><th>Code</th><th>Hôte</th><th>Cadence</th><th>Statut</th><th></th></tr>
+        <tr><td>K4UD</td><td>Martin</td><td>3+2</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn">Rejoindre</span></td></tr>
+        <tr><td>VFF4</td><td>Julie</td><td>5+0</td><td><span class="badge b-play">En cours</span></td><td></td></tr>
+        <tr><td>9BJR</td><td>Karim</td><td>sans horloge</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn">Rejoindre</span></td></tr>
+      </table>
+    </div>
+    <div class="game">
+      <div class="board-wrap">
+        <div class="clocks"><span class="clk on">2:41</span><span class="clk">2:58</span></div>
+        <div class="board">
+          <span class="stone black" style="left:50%;top:50%"></span>
+          <span class="stone white" style="left:39%;top:39%"></span>
+          <span class="stone black" style="left:17%;top:61%"></span>
+          <span class="stone white" style="left:72%;top:28%"></span>
+          <span class="stone black" style="left:83%;top:83%"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="cardp status">Trait : Noir</div>
+        <div class="cardp hintline">Pose sur ta rangée de départ ou glisse une pierre (max 3 cases).
+          Percée · anéantissement · immobilisation.</div>
+        <div class="btnrow"><span class="btn solid">Nouvelle partie</span><span class="btn">Annuler</span></div>
+        <div class="palette">
+          <span class="sw" style="background:#141210"></span><span class="sw" style="background:#EFE8DA"></span>
+          <span class="sw" style="background:#C29B4A"></span><span class="sw" style="background:#8A3120"></span>
+          <span class="fname">Cinzel · Inter</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ÉDITORIAL MINÉRAL ================= -->
+<section class="mock" data-theme="editorial">
+  <div class="mock-label">DA 2 — Éditorial Minéral</div>
+  <div class="page">
+    <div class="nav"><span class="brand">IMPETUS</span>
+      <span class="nav-links"><span class="on">Jouer</span><span>Parties</span><span>Profil</span></span>
+      <span class="who">Martin · <b>1218</b></span></div>
+    <div class="hero">
+      <div class="logo">IMPETUS</div>
+      <div class="tagline">Glisse. Bloque. Percée.</div>
+      <div class="tiles">
+        <button class="tile"><span class="t-icon">01 →</span><span class="t-label">Partie rapide</span><small>classé · 5 min</small></button>
+        <button class="tile"><span class="t-icon">02 ⌗</span><span class="t-label">Contre l'IA</span><small>3 niveaux</small></button>
+        <button class="tile"><span class="t-icon">03 ⊙⊙</span><span class="t-label">2 joueurs</span><small>même écran</small></button>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Salons ouverts · 4 en ligne</h2>
+      <table>
+        <tr><th>Code</th><th>Hôte</th><th>Cadence</th><th>Statut</th><th></th></tr>
+        <tr><td>K4UD</td><td>Martin</td><td>3+2</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn solid">Rejoindre</span></td></tr>
+        <tr><td>VFF4</td><td>Julie</td><td>5+0</td><td><span class="badge b-play">En cours</span></td><td></td></tr>
+        <tr><td>9BJR</td><td>Karim</td><td>sans horloge</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn solid">Rejoindre</span></td></tr>
+      </table>
+    </div>
+    <div class="game">
+      <div class="board-wrap">
+        <div class="clocks"><span class="clk on">2:41</span><span class="clk">2:58</span></div>
+        <div class="board">
+          <span class="stone black" style="left:50%;top:50%"></span>
+          <span class="stone white" style="left:39%;top:39%"></span>
+          <span class="stone black" style="left:17%;top:61%"></span>
+          <span class="stone white" style="left:72%;top:28%"></span>
+          <span class="stone black" style="left:83%;top:83%"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="cardp status">Trait : Noir</div>
+        <div class="cardp hintline">Pose sur ta rangée de départ ou glisse une pierre (max 3 cases).
+          Percée · anéantissement · immobilisation.</div>
+        <div class="btnrow"><span class="btn solid">Nouvelle partie</span><span class="btn">Annuler</span></div>
+        <div class="palette">
+          <span class="sw" style="background:#F2EEE6"></span><span class="sw" style="background:#17130E"></span>
+          <span class="sw" style="background:#E0491F"></span><span class="sw" style="background:#4A7C59"></span>
+          <span class="fname">Fraunces · Space Grotesk · Space Mono</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MINUIT INDIGO ================= -->
+<section class="mock" data-theme="minuit">
+  <div class="mock-label">DA 3 — Minuit Indigo</div>
+  <div class="page">
+    <div class="nav"><span class="brand">IMPETUS</span>
+      <span class="nav-links"><span class="on">Jouer</span><span>Parties</span><span>Profil</span></span>
+      <span class="who">Martin · <b>1218</b></span></div>
+    <div class="hero">
+      <div class="logo">IMPETUS</div>
+      <div class="tagline">Glisse. Bloque. Percée.</div>
+      <div class="tiles">
+        <button class="tile"><span class="t-icon">⚡</span><span class="t-label">Partie rapide</span><small>classé · 5 min</small></button>
+        <button class="tile"><span class="t-icon">◎</span><span class="t-label">Contre l'IA</span><small>3 niveaux</small></button>
+        <button class="tile"><span class="t-icon">∞</span><span class="t-label">2 joueurs</span><small>même écran</small></button>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Salons ouverts · 4 en ligne</h2>
+      <table>
+        <tr><th>Code</th><th>Hôte</th><th>Cadence</th><th>Statut</th><th></th></tr>
+        <tr><td>K4UD</td><td>Martin</td><td>3+2</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn">Rejoindre</span></td></tr>
+        <tr><td>VFF4</td><td>Julie</td><td>5+0</td><td><span class="badge b-play">En cours</span></td><td></td></tr>
+        <tr><td>9BJR</td><td>Karim</td><td>sans horloge</td><td><span class="badge b-wait">Ouvert</span></td><td><span class="btn">Rejoindre</span></td></tr>
+      </table>
+    </div>
+    <div class="game">
+      <div class="board-wrap">
+        <div class="clocks"><span class="clk on">2:41</span><span class="clk">2:58</span></div>
+        <div class="board">
+          <span class="stone black" style="left:50%;top:50%"></span>
+          <span class="stone white" style="left:39%;top:39%"></span>
+          <span class="stone black" style="left:17%;top:61%"></span>
+          <span class="stone white" style="left:72%;top:28%"></span>
+          <span class="stone black" style="left:83%;top:83%"></span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="cardp status">Trait : Noir</div>
+        <div class="cardp hintline">Pose sur ta rangée de départ ou glisse une pierre (max 3 cases).
+          Percée · anéantissement · immobilisation.</div>
+        <div class="btnrow"><span class="btn solid">Nouvelle partie</span><span class="btn">Annuler</span></div>
+        <div class="palette">
+          <span class="sw" style="background:#0F1320"></span><span class="sw" style="background:#F5F1E8"></span>
+          <span class="sw" style="background:#FF5A3C"></span><span class="sw" style="background:#5AB0FF"></span>
+          <span class="fname">Unbounded · Inter</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

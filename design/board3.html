@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Impetus — Échelle de luminosité du plateau</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#0d0c0a;color:#EFE8DA;font-family:Inter,sans-serif;padding:30px 20px 60px}
+h1{font-family:Cinzel,serif;letter-spacing:.28em;font-size:1rem;text-align:center;margin-bottom:6px}
+.sub{text-align:center;color:#A79E8D;font-size:.82rem;margin-bottom:30px}
+.ladder{display:flex;flex-direction:column;gap:26px;max-width:760px;margin:0 auto}
+.step{display:flex;gap:22px;align-items:center;background:#14120f;border:1px solid #2a251e;border-radius:10px;padding:16px}
+.board{flex:0 0 300px;aspect-ratio:1;position:relative;border-radius:8px;overflow:hidden;
+       box-shadow:inset 0 0 50px rgba(0,0,0,.35)}
+.stone{position:absolute;width:9%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);z-index:3}
+.camp{position:absolute;left:0;right:0;height:11.11%;z-index:1}
+.info h2{font-family:Cinzel,serif;font-size:.9rem;letter-spacing:.1em;color:#C29B4A;margin-bottom:6px}
+.hex{font-family:'Space Mono',monospace;font-size:.72rem;color:#8a8172;margin-bottom:8px}
+.info p{color:#A79E8D;font-size:.78rem;line-height:1.55}
+.rung{font-family:'Space Mono',monospace;color:#5f584b;font-size:.7rem;margin-top:10px}
+
+/* pierres */
+.pb{background:radial-gradient(circle at 32% 28%,#433c31,#0f0c09 72%);
+    box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.pw-light{background:radial-gradient(circle at 32% 28%,#ffffff,#efe9db 62%,#cdc4b0);
+    box-shadow:0 2px 6px rgba(0,0,0,.30), inset 0 0 0 1.5px rgba(70,58,40,.55)}
+.pw-dark{background:radial-gradient(circle at 32% 28%,#fffdf4,#d9d2c0 62%,#b5ac97);
+    box-shadow:0 2px 6px rgba(0,0,0,.45), inset 0 0 0 1.5px rgba(40,32,20,.45)}
+
+/* A · pierre d'arène claire */
+.vA{background:#D8C9AC;
+    background-image:
+      linear-gradient(rgba(96,78,50,.42) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(96,78,50,.42) 1px,transparent 1px),
+      radial-gradient(circle at 25% 15%,rgba(255,250,235,.5),transparent 55%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(120,95,55,.30), 0 10px 30px rgba(0,0,0,.35)}
+.vA .camp.b{top:0;background:rgba(138,49,32,.13);border-bottom:1.5px solid rgba(138,49,32,.65)}
+.vA .camp.w{bottom:0;background:rgba(74,107,84,.14);border-top:1.5px solid rgba(74,107,84,.65)}
+.vA .stone.b{box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.30)}
+
+/* A2 · arène au crépuscule */
+.vA2{background:#A2937A;
+    background-image:
+      linear-gradient(rgba(70,56,36,.40) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(70,56,36,.40) 1px,transparent 1px),
+      radial-gradient(circle at 25% 15%,rgba(235,220,190,.35),transparent 55%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(80,60,30,.35), 0 10px 30px rgba(0,0,0,.4)}
+.vA2 .camp.b{top:0;background:rgba(138,49,32,.15);border-bottom:1.5px solid rgba(160,120,60,.7)}
+.vA2 .camp.w{bottom:0;background:rgba(74,107,84,.14);border-top:1.5px solid rgba(110,140,105,.7)}
+
+/* T · travertin sombre */
+.vT{background:#6E6858;
+    background-image:
+      linear-gradient(rgba(38,34,26,.45) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(38,34,26,.45) 1px,transparent 1px),
+      linear-gradient(150deg,rgba(210,200,175,.14) 20%,transparent 60%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(30,25,15,.4), 0 10px 30px rgba(0,0,0,.45)}
+.vT .camp.b{top:0;background:rgba(138,49,32,.18);border-bottom:1.5px solid rgba(194,155,74,.6)}
+.vT .camp.w{bottom:0;background:rgba(74,107,84,.16);border-top:1.5px solid rgba(150,170,145,.6)}
+
+/* G · gris basalte moyen */
+.vG{background:#4A463E;
+    background-image:
+      linear-gradient(rgba(220,210,185,.20) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(220,210,185,.20) 1px,transparent 1px);
+    background-size:11.11% 11.11%;
+    box-shadow:inset 0 0 70px rgba(0,0,0,.42), 0 10px 30px rgba(0,0,0,.45)}
+.vG .camp.b{top:0;background:rgba(138,49,32,.20);border-bottom:1.5px solid rgba(194,155,74,.65)}
+.vG .camp.w{bottom:0;background:rgba(200,205,195,.08);border-top:1.5px solid rgba(220,215,200,.55)}
+</style>
+</head>
+<body>
+<h1>ÉCHELLE DU PLATEAU</h1>
+<p class="sub">Du plus clair au plus sombre — même style gravé, camps au filet, pierre adaptée</p>
+
+<div class="ladder">
+
+  <div class="step">
+    <div class="board vA">
+      <div class="camp b"></div><div class="camp w"></div>
+      <span class="stone pb" style="left:50%;top:50%"></span>
+      <span class="stone pw-light" style="left:39%;top:39%"></span>
+      <span class="stone pb" style="left:17%;top:61%"></span>
+      <span class="stone pw-light" style="left:72%;top:28%"></span>
+    </div>
+    <div class="info">
+      <h2>A · PIERRE D'ARÈNE</h2>
+      <div class="hex">#D8C9AC</div>
+      <p>Sable chaud lumineux. Le plateau est la star, très identifiable en miniature.</p>
+      <div class="rung">échelle : le plus clair</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="board vA2">
+      <div class="camp b"></div><div class="camp w"></div>
+      <span class="stone pb" style="left:50%;top:50%"></span>
+      <span class="stone pw-light" style="left:39%;top:39%"></span>
+      <span class="stone pb" style="left:17%;top:61%"></span>
+      <span class="stone pw-light" style="left:72%;top:28%"></span>
+    </div>
+    <div class="info">
+      <h2>A2 · ARÈNE AU CRÉPUSCULE</h2>
+      <div class="hex">#A2937A</div>
+      <p>Le sable qui s'assombrit : garde la chaleur du A avec plus de solennité.</p>
+      <div class="rung">palier intermédiaire chaud</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="board vT">
+      <div class="camp b"></div><div class="camp w"></div>
+      <span class="stone pb" style="left:50%;top:50%"></span>
+      <span class="stone pw-dark" style="left:39%;top:39%"></span>
+      <span class="stone pb" style="left:17%;top:61%"></span>
+      <span class="stone pw-dark" style="left:72%;top:28%"></span>
+    </div>
+    <div class="info">
+      <h2>T · TRAVERTIN SOMBRE</h2>
+      <div class="hex">#6E6858</div>
+      <p>Ton « B » descendu vers le sombre : pierre romaine grise, reflet doux, équilibre exact entre tes deux coups de cœur.</p>
+      <div class="rung">entre B/C et E ★</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="board vG">
+      <div class="camp b"></div><div class="camp w"></div>
+      <span class="stone pb" style="left:50%;top:50%"></span>
+      <span class="stone pw-dark" style="left:39%;top:39%"></span>
+      <span class="stone pb" style="left:17%;top:61%"></span>
+      <span class="stone pw-dark" style="left:72%;top:28%"></span>
+    </div>
+    <div class="info">
+      <h2>G · GRIS BASALTE MOYEN</h2>
+      <div class="hex">#4A463E</div>
+      <p>Gris pierre froid descendant : mailles claires, ambiance nocturne de salle de tournoi.</p>
+      <div class="rung">un cran au-dessus de E</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="board vE" style="background:#35322C;background-image:linear-gradient(rgba(239,232,218,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(239,232,218,.16) 1px,transparent 1px);background-size:11.11% 11.11%">
+      <div class="camp b" style="background:rgba(138,49,32,.16);border-bottom:1px solid rgba(194,155,74,.55)"></div>
+      <div class="camp w" style="bottom:0;top:auto;background:rgba(90,110,80,.12);border-top:1px solid rgba(194,155,74,.55)"></div>
+      <span class="stone pb" style="left:50%;top:50%;box-shadow:inset 0 0 0 1.5px rgba(194,155,74,.35)"></span>
+      <span class="stone pw-dark" style="left:39%;top:39%"></span>
+      <span class="stone pb" style="left:17%;top:61%;box-shadow:inset 0 0 0 1.5px rgba(194,155,74,.35)"></span>
+      <span class="stone pw-dark" style="left:72%;top:28%"></span>
+    </div>
+    <div class="info">
+      <h2>E · BASALTE ACTUEL</h2>
+      <div class="hex">#35322C</div>
+      <p>Ton sombre initial, pour mémoire.</p>
+      <div class="rung">le plus sombre</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

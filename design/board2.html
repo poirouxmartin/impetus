@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Impetus — Plateaux pierre romaine (ton clair)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#0d0c0a;color:#EFE8DA;font-family:Inter,sans-serif;padding:30px 20px 60px}
+h1{font-family:Cinzel,serif;letter-spacing:.3em;font-size:1.05rem;text-align:center;margin-bottom:6px}
+.sub{text-align:center;color:#A79E8D;font-size:.82rem;margin-bottom:34px}
+.grid{display:flex;flex-wrap:wrap;gap:36px;justify-content:center}
+.variant{width:min(430px,92vw)}
+.variant h2{font-family:Cinzel,serif;font-size:.92rem;letter-spacing:.12em;color:#C29B4A;margin-bottom:4px}
+.variant p{color:#A79E8D;font-size:.76rem;line-height:1.5;margin-bottom:12px}
+
+.board{aspect-ratio:1;position:relative;border-radius:8px;overflow:hidden;
+       box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.cells{position:absolute;inset:0;display:grid;grid-template:repeat(9,1fr)/repeat(9,1fr)}
+.stone{position:absolute;width:9%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);z-index:3}
+.camp{position:absolute;left:0;right:0;height:11.11%;z-index:1;pointer-events:none}
+.coord{position:absolute;font-family:Cinzel,serif;font-size:10px;z-index:2}
+
+/* pierres adaptées aux fonds clairs */
+.stone.b{background:radial-gradient(circle at 32% 28%,#433c31,#0f0c09 72%);
+         box-shadow:0 2px 6px rgba(0,0,0,.35), inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.stone.w{background:radial-gradient(circle at 32% 28%,#ffffff,#efe9db 62%,#cdc4b0);
+         box-shadow:0 2px 6px rgba(0,0,0,.30), inset 0 0 0 1.5px rgba(70,58,40,.55)}
+
+/* A · pierre d'arène */
+.vA{background:#D8C9AC;
+    background-image:
+      linear-gradient(rgba(96,78,50,.42) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(96,78,50,.42) 1px,transparent 1px),
+      radial-gradient(circle at 25% 15%,rgba(255,250,235,.5),transparent 55%),
+      radial-gradient(circle at 80% 90%,rgba(150,120,75,.18),transparent 55%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(120,95,55,.30), 0 10px 30px rgba(0,0,0,.35)}
+.vA .camp.black{top:0;background:rgba(138,49,32,.13);border-bottom:1.5px solid rgba(138,49,32,.65)}
+.vA .camp.white{bottom:0;background:rgba(74,107,84,.14);border-top:1.5px solid rgba(74,107,84,.65)}
+.vA .coord{color:rgba(96,78,50,.65)}
+
+/* B · travertin gris moyen */
+.vB{background:#B3AB99;
+    background-image:
+      linear-gradient(rgba(58,52,42,.38) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(58,52,42,.38) 1px,transparent 1px),
+      linear-gradient(160deg,rgba(255,255,255,.28) 15%,transparent 55%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(60,52,40,.28), 0 10px 30px rgba(0,0,0,.35)}
+.vB .camp.black{top:0;background:rgba(138,49,32,.14);border-bottom:1.5px solid rgba(138,49,32,.7)}
+.vB .camp.white{bottom:0;background:rgba(64,86,102,.14);border-top:1.5px solid rgba(64,86,102,.7)}
+.vB .coord{color:rgba(58,52,42,.6)}
+
+/* C · gris pierre froid clair */
+.vC{background:#AEAF A9}
+.vC{background:#AEAFA9;
+    background-image:
+      linear-gradient(rgba(46,48,46,.36) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(46,48,46,.36) 1px,transparent 1px);
+    background-size:11.11% 11.11%;
+    box-shadow:inset 0 0 70px rgba(40,42,40,.25), 0 10px 30px rgba(0,0,0,.35)}
+.vC .camp.black{top:0;background:rgba(30,32,30,.10);border-bottom:1.5px solid rgba(46,48,46,.55)}
+.vC .camp.white{bottom:0;background:rgba(255,255,255,.20);border-top:1.5px solid rgba(255,255,255,.65)}
+.vC .coord{color:rgba(46,48,46,.55)}
+
+/* D · marbre gris veiné */
+.vD{background:#CBC8C0;
+    background-image:
+      linear-gradient(rgba(35,32,28,.42) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(35,32,28,.42) 1px,transparent 1px),
+      linear-gradient(105deg,transparent 30%,rgba(120,118,112,.35) 38%,transparent 46%),
+      linear-gradient(290deg,transparent 55%,rgba(140,136,128,.30) 66%,transparent 74%),
+      linear-gradient(180deg,rgba(255,255,255,.4),transparent 40%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%,100% 100%,100% 100%;
+    box-shadow:inset 0 0 70px rgba(90,88,82,.25), 0 10px 30px rgba(0,0,0,.35)}
+.vD .camp.black{top:0;background:rgba(138,49,32,.10);border-bottom:1.5px solid rgba(138,49,32,.6)}
+.vD .camp.white{bottom:0;background:rgba(194,155,74,.16);border-top:1.5px solid rgba(194,155,74,.7)}
+.vD .coord{color:rgba(35,32,28,.5)}
+
+/* E · référence sombre actuelle */
+.vE{background:#35322C;
+    background-image:
+      linear-gradient(rgba(239,232,218,.16) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(239,232,218,.16) 1px,transparent 1px);
+    background-size:11.11% 11.11%;
+    box-shadow:inset 0 0 60px rgba(0,0,0,.45), 0 10px 30px rgba(0,0,0,.4)}
+.vE .camp.black{top:0;background:rgba(138,49,32,.16);border-bottom:1px solid rgba(194,155,74,.55)}
+.vE .camp.white{bottom:0;background:rgba(90,110,80,.12);border-top:1px solid rgba(194,155,74,.55)}
+
+.pions{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-2px;margin-right:5px}
+.pb{background:radial-gradient(circle at 32% 28%,#433c31,#0f0c09 72%);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.25)}
+.pw{background:radial-gradient(circle at 32% 28%,#fff,#e9e2d2 60%,#cfc6b2);box-shadow:inset 0 0 0 1.5px rgba(70,58,40,.55)}
+</style>
+</head>
+<body>
+<h1>PLATEAU — PIERRE ROMAINE (TONS CLAIRS)</h1>
+<p class="sub">Style V1 conservé : uni, mailles gravées, camps soulignés · <span class="pions pb"></span>Noir <span class="pions pw"></span>Blanc adaptés à chaque fond</p>
+
+<div class="grid">
+
+  <div class="variant">
+    <h2>A · PIERRE D'ARÈNE</h2>
+    <p>Sable chaud du Colisée : beige doré, halos lumineux, camps pompéien/olive. Le plus chaleureux, très « antique ».</p>
+    <div class="board vA">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="coord" style="left:5px;top:5px">I</span>
+      <span class="coord" style="right:5px;top:5px">IX</span>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>B · TRAVERTIN GRIS MOYEN</h2>
+    <p>Gris-beige romain classique, reflet doux. Compromis entre le sombre initial et le très clair.</p>
+    <div class="board vB">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="coord" style="left:5px;top:5px">I</span>
+      <span class="coord" style="right:5px;top:5px">IX</span>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>C · GRIS PIERRE FROID CLAIR</h2>
+    <p>Gris neutre presque minéral, camps sobrement marqués. Le plus discret, le plus « compétitif ».</p>
+    <div class="board vC">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="coord" style="left:5px;top:5px">I</span>
+      <span class="coord" style="right:5px;top:5px">IX</span>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>D · MARBRE GRIS VEINÉ</h2>
+    <p>Gris clair veiné (ta piste « marbre »), filet pompéien en haut et or en bas.</p>
+    <div class="board vD">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="coord" style="left:5px;top:5px">I</span>
+      <span class="coord" style="right:5px;top:5px">IX</span>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>E · RÉFÉRENCE SOMBRE ACTUELLE</h2>
+    <p>Pour comparaison avec la version précédente.</p>
+    <div class="board vE">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

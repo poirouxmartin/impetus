@@ -1,6 +1,7 @@
 import { applyAction, Color, initialState, type Position } from '../core/rules'
 import type { Action } from '../core/rules'
 import type { GameRecord } from '../platform/store'
+import { BOARD, currentTheme } from './theme'
 
 const N = 9
 const CELL = 52
@@ -76,9 +77,10 @@ export class ReplayViewer {
     const ctx = this.ctx
     ctx.beginPath()
     ctx.arc(x, y, radius, 0, Math.PI * 2)
-    ctx.fillStyle = color === 'black' ? '#15181d' : '#eceae6'
+    const T = BOARD[currentTheme()]
+    ctx.fillStyle = color === 'black' ? T.blackG1 : T.whiteG0
     ctx.fill()
-    ctx.strokeStyle = color === 'black' ? '#000' : '#7a7f87'
+    ctx.strokeStyle = color === 'black' ? T.blackRim : T.whiteRim
     ctx.lineWidth = 1
     ctx.stroke()
   }
@@ -91,7 +93,8 @@ export class ReplayViewer {
     const ctx = this.ctx
     const logical = N * CELL
     ctx.clearRect(0, 0, logical, logical)
-    ctx.fillStyle = '#171b22'
+    const T = BOARD[currentTheme()]
+    ctx.fillStyle = T.bg
     ctx.fillRect(0, 0, logical, logical)
 
     if (this.index > 0) {
@@ -108,7 +111,7 @@ export class ReplayViewer {
       }
     }
 
-    ctx.strokeStyle = '#333944'
+    ctx.strokeStyle = BOARD[currentTheme()].line
     ctx.lineWidth = 1
     for (let i = 0; i <= N; i++) {
       ctx.beginPath()
@@ -136,3 +139,4 @@ export function replayNotation(a: Action): string {
   if (a.kind === 'swap') return 'swap'
   return `${sq(a.row, a.col)}→${a.dir}`
 }
+

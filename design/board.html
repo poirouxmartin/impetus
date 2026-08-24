@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Impetus — Plateaux (Marbre Romain)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#0d0c0a;color:#EFE8DA;font-family:Inter,sans-serif;padding:30px 20px 60px}
+h1{font-family:Cinzel,serif;letter-spacing:.3em;font-size:1.1rem;text-align:center;margin-bottom:6px}
+.sub{text-align:center;color:#A79E8D;font-size:.85rem;margin-bottom:34px}
+.grid{display:flex;flex-wrap:wrap;gap:38px;justify-content:center}
+.variant{width:min(430px,92vw)}
+.variant h2{font-family:Cinzel,serif;font-size:.95rem;letter-spacing:.12em;color:#C29B4A;margin-bottom:4px}
+.variant p{color:#A79E8D;font-size:.78rem;line-height:1.5;margin-bottom:12px}
+
+/* plateau générique */
+.board{aspect-ratio:1;position:relative;border-radius:8px;
+       box-shadow:inset 0 0 60px rgba(0,0,0,.45), 0 10px 30px rgba(0,0,0,.4);
+       overflow:hidden}
+.cells{position:absolute;inset:0;display:grid;grid-template:repeat(9,1fr)/repeat(9,1fr)}
+.stone{position:absolute;width:9%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);z-index:3}
+.stone.b{background:radial-gradient(circle at 32% 28%,#4d463b,#0e0b08 72%);
+         box-shadow:0 2px 5px rgba(0,0,0,.5), inset 0 0 0 1.5px rgba(194,155,74,.35)}
+.stone.w{background:radial-gradient(circle at 32% 28%,#fffdf4,#d6cfbd 70%,#b7ae99);
+         box-shadow:0 2px 5px rgba(0,0,0,.5), inset 0 0 0 1.5px rgba(40,32,20,.4)}
+.camp{position:absolute;left:0;right:0;height:11.11%;z-index:1;pointer-events:none}
+.coord{position:absolute;font-size:9px;color:rgba(239,232,218,.4);z-index:2;font-family:Cinzel,serif}
+.legend{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+
+/* V1 basalte gravé */
+.v1{background:#35322C;
+    background-image:
+      linear-gradient(rgba(239,232,218,.16) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(239,232,218,.16) 1px,transparent 1px),
+      radial-gradient(circle at 30% 20%,rgba(255,255,255,.05),transparent 60%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%}
+.v1 .camp.black{top:0;background:rgba(138,49,32,.16);border-bottom:1px solid rgba(194,155,74,.55)}
+.v1 .camp.white{bottom:0;background:rgba(90,110,80,.12);border-top:1px solid rgba(194,155,74,.55)}
+.v1 .coord{color:rgba(194,155,74,.55)}
+
+/* V2 damier porphyre */
+.v2{background:#34302A}
+.v2 .cells i:nth-child(odd){background:rgba(255,255,255,.035)}
+.v2 .cells i:nth-child(even){background:rgba(0,0,0,.14)}
+.v2 .camp.black{top:0;background:rgba(138,49,32,.20)}
+.v2 .camp.white{bottom:0;background:rgba(90,110,80,.15)}
+
+/* V3 marbre crème */
+.v3{background:#EDE6D6;
+    background-image:
+      linear-gradient(rgba(23,19,16,.5) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(23,19,16,.5) 1px,transparent 1px),
+      linear-gradient(115deg,rgba(255,255,255,.5) 20%,transparent 45%),
+      linear-gradient(300deg,rgba(180,168,140,.25) 10%,transparent 50%);
+    background-size:11.11% 11.11%,11.11% 11.11%,100% 100%,100% 100%}
+.v3 .camp.black{top:0;background:rgba(138,49,32,.10);border-bottom:1.5px solid #8A3120}
+.v3 .camp.white{bottom:0;background:rgba(74,124,89,.10);border-top:1.5px solid #4A7C59}
+.v3 .stone.b{box-shadow:inset 0 0 0 1.5px rgba(194,155,74,.5), 0 2px 4px rgba(0,0,0,.35)}
+.v3 .coord{color:rgba(23,19,16,.45)}
+
+/* V4 bronze patiné */
+.v4{background:#2E3230;
+    background-image:
+      linear-gradient(rgba(196,150,98,.20) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(196,150,98,.20) 1px,transparent 1px);
+    background-size:11.11% 11.11%}
+.v4 .camp.black{top:0;background:rgba(255,90,60,.08);border-bottom:1px solid rgba(255,122,89,.5)}
+.v4 .camp.white{bottom:0;background:rgba(90,176,255,.08);border-top:1px solid rgba(90,176,255,.5)}
+</style>
+</head>
+<body>
+<h1>PLATEAU — MARBRE ROMAIN</h1>
+<p class="sub">Même position rendue quatre fois · camps marqués haut/bas · pierre dorée = dernière pose</p>
+
+<div class="grid">
+
+  <div class="variant">
+    <h2>V1 · BASALTE GRAVÉ <span class="legend" style="background:#35322C"></span></h2>
+    <p>Plateau sombre uni, mailles gravées clair, filets d'or délimitant les camps, coordonnées romaines en marge. Sobre et solennel.</p>
+    <div class="board v1">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="coord" style="left:4px;top:4px">I</span>
+      <span class="coord" style="right:4px;top:4px">IX</span>
+      <span class="coord" style="left:4px;bottom:4px">I</span>
+      <span class="coord" style="right:4px;bottom:4px">IX</span>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>V2 · DAMIER PORPHYRE <span class="legend" style="background:#34302A"></span></h2>
+    <p>Deux tons de pierre alternés (damier discret, pas criard). Aide à compter les distances, peut brouiller la lecture des couloirs.</p>
+    <div class="board v2">
+      <div class="cells">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>V3 · MARBRE CRÈME <span class="legend" style="background:#EDE6D6"></span></h2>
+    <p>La version claire que tu doutais : voiles de veines, encres noires, camps soulignés pompéien/olive. Les blancs ressortent par leur liseré.</p>
+    <div class="board v3">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+  <div class="variant">
+    <h2>V4 · BRONZE PATINÉ <span class="legend" style="background:#2E3230"></span></h2>
+    <p>Variante froide vert-de-gris, maille cuivre, camps vermillon/bleu glacé. Pour comparer la température.</p>
+    <div class="board v4">
+      <div class="camp black"></div><div class="camp white"></div>
+      <span class="stone b" style="left:50%;top:50%"></span>
+      <span class="stone w" style="left:39%;top:39%"></span>
+      <span class="stone b" style="left:17%;top:61%"></span>
+      <span class="stone w" style="left:72%;top:28%"></span>
+      <span class="stone b" style="left:83%;top:83%"></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

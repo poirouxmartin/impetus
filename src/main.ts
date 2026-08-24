@@ -27,6 +27,7 @@ import {
 } from './platform/store'
 import { ReplayViewer } from './ui/replay'
 import { renderHistory, renderRatings } from './ui/profile'
+import { BOARD, currentTheme, initTheme, toggleTheme } from './ui/theme'
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 
 const LOGICAL = 630
@@ -623,23 +624,25 @@ function stoneGradient(x: number, y: number, radius: number, color: Color): Canv
     y,
     radius,
   )
+  const T = BOARD[currentTheme()]
   if (color === 'black') {
-    grad.addColorStop(0, '#4a4f57')
-    grad.addColorStop(1, '#101216')
+    grad.addColorStop(0, T.blackG0)
+    grad.addColorStop(1, T.blackG1)
   } else {
-    grad.addColorStop(0, '#ffffff')
-    grad.addColorStop(1, '#b9bdc4')
+    grad.addColorStop(0, T.whiteG0)
+    grad.addColorStop(1, T.whiteG1)
   }
   return grad
 }
 
 function drawStoneAt(x: number, y: number, color: Color, scale = 1): void {
   const radius = CELL * 0.38 * scale
+  const T = BOARD[currentTheme()]
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
   ctx.fillStyle = stoneGradient(x, y, radius, color)
   ctx.fill()
-  ctx.strokeStyle = color === 'black' ? '#000' : '#8a8e95'
+  ctx.strokeStyle = color === 'black' ? T.blackRim : T.whiteRim
   ctx.lineWidth = 1
   ctx.stroke()
 }
@@ -682,14 +685,20 @@ function drawArrow(
 }
 
 function render(now: number): void {
+  const T = BOARD[currentTheme()]
   requestAnimationFrame(render)
   ctx.clearRect(0, 0, LOGICAL, LOGICAL)
 
-  ctx.fillStyle = 'rgba(255,255,255,0.045)'
+  ctx.fillStyle = T.campTopFill
   ctx.fillRect(0, 0, LOGICAL, CELL)
+  ctx.fillStyle = T.campBottomFill
   ctx.fillRect(0, (SIZE - 1) * CELL, LOGICAL, CELL)
+  ctx.fillStyle = T.filetTop
+  ctx.fillRect(0, CELL - 1.5, LOGICAL, 1.5)
+  ctx.fillStyle = T.filetBottom
+  ctx.fillRect(0, (SIZE - 1) * CELL, LOGICAL, 1.5)
 
-  ctx.strokeStyle = '#343b45'
+  ctx.strokeStyle = T.line
   ctx.lineWidth = 1
   for (let i = 0; i <= SIZE; i++) {
     ctx.beginPath()
@@ -710,7 +719,7 @@ function render(now: number): void {
   }
 
   if (!game.winner && !anim) {
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'
+    ctx.fillStyle = T.placeDot
     for (const i of places) {
       const [x, y] = center(Math.floor(i / SIZE), i % SIZE)
       ctx.beginPath()
@@ -740,14 +749,14 @@ function render(now: number): void {
 
   if (lastMove && !anim) {
     const [tx, ty] = center(lastMove.to[0], lastMove.to[1])
-    ctx.strokeStyle = 'rgba(126,231,135,0.5)'
+    ctx.strokeStyle = T.lastRing
     ctx.lineWidth = 2
     ctx.beginPath()
     ctx.arc(tx, ty, CELL * 0.46, 0, Math.PI * 2)
     ctx.stroke()
     if (lastMove.from) {
       const [fx, fy] = center(lastMove.from[0], lastMove.from[1])
-      ctx.strokeStyle = 'rgba(126,231,135,0.28)'
+      ctx.strokeStyle = T.lastRingSoft
       ctx.beginPath()
       ctx.arc(fx, fy, CELL * 0.18, 0, Math.PI * 2)
       ctx.stroke()
@@ -768,13 +777,13 @@ function render(now: number): void {
         drawArrow(
           ...center(b.action.row, b.action.col),
           ...center(dest.row, dest.col),
-          'rgba(126,231,135,0.85)',
+          T.selRing,
           CELL * 0.12,
         )
       }
     } else if (b && b.action.kind === 'place') {
       const [px, py] = center(b.action.row, b.action.col)
-      ctx.strokeStyle = 'rgba(126,231,135,0.8)'
+      ctx.strokeStyle = T.selRing
       ctx.lineWidth = 3
       ctx.beginPath()
       ctx.arc(px, py, CELL * 0.3, 0, Math.PI * 2)
@@ -784,7 +793,7 @@ function render(now: number): void {
 
   if (selected !== null && !anim) {
     const [sx, sy] = center(Math.floor(selected / SIZE), selected % SIZE)
-    ctx.strokeStyle = '#7ee787'
+    ctx.strokeStyle = T.selRing
     ctx.lineWidth = 3
     ctx.beginPath()
     ctx.arc(sx, sy, CELL * 0.42, 0, Math.PI * 2)
@@ -793,7 +802,7 @@ function render(now: number): void {
       const [dx, dy] = center(d.row, d.col)
       ctx.beginPath()
       ctx.arc(dx, dy, CELL * 0.16, 0, Math.PI * 2)
-      ctx.fillStyle = d.capture ? 'rgba(255,107,107,0.85)' : 'rgba(126,231,135,0.75)'
+      ctx.fillStyle = d.capture ? T.dotCapture : T.dotMove
       ctx.fill()
     }
   }
@@ -1059,6 +1068,14 @@ resetStats.addEventListener('click', () => {
   renderHistoryTab()
 })
 
+const themeName = initTheme()
+const themeToggle = document.getElementById('theme-toggle') as HTMLButtonElement
+themeToggle.textContent = themeName === 'dark' ? '☀' : '☾'
+themeToggle.addEventListener('click', () => {
+  const t = toggleTheme()
+  themeToggle.textContent = t === 'dark' ? '☀' : '☾'
+})
+
 refresh()
 showView('play')
 showLobby()
@@ -1111,5 +1128,6 @@ function updateAnalysisPanel(): void {
     .join('')
   infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
 }
+
 
 
