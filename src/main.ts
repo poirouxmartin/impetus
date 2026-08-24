@@ -27,7 +27,7 @@ import {
 } from './platform/store'
 import { ReplayViewer } from './ui/replay'
 import { renderHistory, renderRatings } from './ui/profile'
-import { connectNet, type NetClient, type ServerMsg } from './net/client'
+import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -45,9 +45,9 @@ const levelLabel = document.getElementById('level-label') as HTMLElement
 const newBtn = document.getElementById('new') as HTMLButtonElement
 const undoBtn = document.getElementById('undo') as HTMLButtonElement
 const swapBtn = document.getElementById('swap') as HTMLButtonElement
-const modeSel = document.getElementById('mode') as HTMLSelectElement
-const sideSel = document.getElementById('side') as HTMLSelectElement
-const levelSel = document.getElementById('level') as HTMLSelectElement
+
+
+
 const liveCb = document.getElementById('live') as HTMLInputElement
 const evalLineEl = document.getElementById('eval-line')!
 const linesEl = document.getElementById('lines')!
@@ -61,17 +61,26 @@ const pseudoInput = document.getElementById('pseudo-input') as HTMLInputElement
 const pseudoSave = document.getElementById('pseudo-save') as HTMLButtonElement
 const ratingsList = document.getElementById('ratings-list')!
 const resetStats = document.getElementById('reset-stats') as HTMLButtonElement
-const onlineGroup = document.getElementById('online-group') as HTMLElement
 const netStatusEl = document.getElementById('net-status')!
 const roomCodeInput = document.getElementById('room-code') as HTMLInputElement
 const roomCreate = document.getElementById('room-create') as HTMLButtonElement
 const roomJoin = document.getElementById('room-join') as HTMLButtonElement
 const resignBtn = document.getElementById('resign') as HTMLButtonElement
-const authZone = document.getElementById('auth-zone') as HTMLElement
 const authNameInput = document.getElementById('auth-name') as HTMLInputElement
 const authPassInput = document.getElementById('auth-pass') as HTMLInputElement
 const authLoginBtn = document.getElementById('auth-login') as HTMLButtonElement
 const authRegisterBtn = document.getElementById('auth-register') as HTMLButtonElement
+const authFormEl = document.getElementById('auth-form') as HTMLFormElement
+const authInfoEl = document.getElementById('auth-info') as HTMLElement
+const authPseudoEl = document.getElementById('auth-pseudo')!
+const authEloEl = document.getElementById('auth-elo')!
+const authLogoutBtn = document.getElementById('auth-logout') as HTMLButtonElement
+
+authLogoutBtn.addEventListener('click', () => {
+  auth = null
+  saveAuth()
+  renderAuthZone()
+})
 const authStatusEl = document.getElementById('auth-status')!
 const clkBlack = document.getElementById('clk-black') as HTMLElement
 const clkWhite = document.getElementById('clk-white') as HTMLElement
@@ -79,6 +88,15 @@ const clocksEl = document.getElementById('clocks') as HTMLElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
 const rematchBtn = document.getElementById('rematch') as HTMLButtonElement
+const lobbyEl = document.getElementById('lobby') as HTMLElement
+const gameWrap = document.getElementById('game-wrap') as HTMLElement
+const lobbyBody = document.getElementById('lobby-body')!
+const onlineCountEl = document.getElementById('online-count')!
+const tileAi = document.getElementById('tile-ai') as HTMLButtonElement
+const tileLocal = document.getElementById('tile-local') as HTMLButtonElement
+const backLobbyBtn = document.getElementById('back-lobby') as HTMLButtonElement
+const sideSelEl = document.getElementById('side') as HTMLSelectElement
+const levelSelEl = document.getElementById('level') as HTMLSelectElement
 
 const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
 const REASON: Record<WinReason, string> = {
@@ -139,11 +157,24 @@ function saveAuth(): void {
 }
 
 function renderAuthZone(): void {
-  if (auth) {
-    authZone.innerHTML = `<div class="authed-line"><span>👤 ${auth.name}</span><span class="elo">${auth.rating}</span></div>`
+  const logged = auth !== null
+  authFormEl.hidden = logged
+  authInfoEl.hidden = !logged
+  if (logged && auth) {
+    authPseudoEl.textContent = auth.name
+    authEloEl.textContent = String(auth.rating)
+    authNameInput.value = auth.name
     authStatusEl.textContent = 'Compte connecté — parties rapides classées.'
     authStatusEl.className = 'ok'
+  } else {
+    authStatusEl.textContent =
+      'Connecte-toi pour que tes parties rapides comptent pour ton Elo.'
+    authStatusEl.className = ''
   }
+  const navAuth = document.getElementById('nav-auth')!
+  navAuth.innerHTML = logged
+    ? `<span class="mini-auth">${auth!.name} · <b>${auth!.rating}</b></span>`
+    : '<span class="mini-auth guest">visiteur</span>'
 }
 
 function handleAuthOk(token: string, p: { name: string; rating: number }): void {
@@ -234,6 +265,7 @@ function handleNet(msg: ServerMsg): void {
         auth.rating = msg.myRating
         saveAuth()
       }
+      showGame()
       refresh()
       netStatus(
         online.oppName
@@ -286,8 +318,58 @@ function handleNet(msg: ServerMsg): void {
     case 'error':
       netStatus(`⚠ ${msg.message}`)
       break
+    case 'lobby':
+      renderLobby(msg.rooms, msg.online)
+      break
     default:
       break
+  }
+}
+
+const CLOCK_LABEL: Record<string, string> = {
+  none: 'sans horloge',
+  '3+2': '3+2',
+  '5+0': '5+0',
+  test: 'test',
+}
+
+function renderLobby(rooms: LobbyRoom[], onlineCount: number): void {
+  onlineCountEl.textContent = `${onlineCount} en ligne`
+  lobbyBody.innerHTML = ''
+  const open = rooms.filter((r) => r.status !== 'over')
+  if (open.length === 0) {
+    lobbyBody.innerHTML =
+      '<tr><td colspan="6" class="empty">Aucun salon ouvert — crée le premier !</td></tr>'
+    return
+  }
+  for (const r of open) {
+    const tr = document.createElement('tr')
+    const statusBadge =
+      r.status === 'waiting'
+        ? '<span class="badge wait">Ouvert</span>'
+        : '<span class="badge play">En cours</span>'
+    tr.innerHTML = `
+      <td><code>${r.id}</code></td>
+      <td>${r.host}</td>
+      <td>${r.guest ?? '—'}</td>
+      <td>${CLOCK_LABEL[r.clockKey] ?? r.clockKey}</td>
+      <td>${r.rated ? '★' : ''}</td>
+      <td>${statusBadge}</td>
+      <td>${
+        r.status === 'waiting'
+          ? `<button class="mini join-btn" data-code="${r.id}">Rejoindre</button>`
+          : ''
+      }</td>
+    `
+    const btn = tr.querySelector<HTMLButtonElement>('button.join-btn')
+    if (btn) {
+      btn.addEventListener('click', () => {
+        openNet()
+        currentNet!.send({ type: 'join', code: r.id, name: profile.pseudo })
+        netStatus(`Connexion au salon ${r.id}…`)
+      })
+    }
+    lobbyBody.appendChild(tr)
   }
 }
 
@@ -314,12 +396,7 @@ function openNet(): void {
   )
 }
 
-function leaveOnline(): void {
-  if (online) online.net.close()
-  else currentNet?.close()
-  online = null
-  currentNet = null
-}
+
 
 function refresh(): void {
   places = game.placeSquares()
@@ -804,22 +881,56 @@ newBtn.addEventListener('click', () => {
   afterMove()
 })
 
-modeSel.addEventListener('change', () => {
-  const prev = mode
-  mode = modeSel.value as 'ai' | 'hotseat' | 'online'
-  onlineGroup.hidden = mode !== 'online'
-  if (prev === 'online' && mode !== 'online') leaveOnline()
-  if (mode === 'online') {
-    game = new Game()
-    movesLog = []
-    recorded = false
-    resetView()
-    netStatus('Crée un salon ou rejoins-en un avec son code.')
-  } else if (aiThinking) {
-    modeSel.value = mode
-    aiThinking = false
+/* ==== Écrans lobby / partie ==== */
+
+function showLobby(): void {
+  lobbyEl.hidden = false
+  gameWrap.hidden = true
+}
+
+function showGame(): void {
+  lobbyEl.hidden = true
+  gameWrap.hidden = false
+  window.scrollTo({ top: 0 })
+}
+
+function startAiGame(): void {
+  mode = 'ai'
+  game = new Game()
+  humanSide = sideSelEl.value as Color
+  level = levelSelEl.value as Level
+  gameId++
+  recorded = false
+  movesLog = []
+  resetView()
+  clockSnap = null
+  showGame()
+  refresh()
+  renderClocks()
+}
+
+function startLocalGame(): void {
+  mode = 'hotseat'
+  game = new Game()
+  gameId++
+  recorded = false
+  movesLog = []
+  resetView()
+  clockSnap = null
+  showGame()
+  refresh()
+}
+
+tileAi.addEventListener('click', startAiGame)
+tileLocal.addEventListener('click', startLocalGame)
+
+backLobbyBtn.addEventListener('click', () => {
+  if (mode === 'online' && online) {
+    online.net.send({ type: 'leave-room' })
+    online = null
   }
-  afterMove()
+  mode = 'ai'
+  showLobby()
 })
 
 roomCreate.addEventListener('click', () => {
@@ -852,10 +963,11 @@ quickBtn.addEventListener('click', () => {
   const net = currentNet!
   if (inQueue) {
     net.send({ type: 'cancel-quick' })
+    netStatus('Recherche annulée.')
     return
   }
-  net.send({ type: 'quick', name: profile.pseudo })
-  clockSel.value = '5+0'
+  net.send({ type: 'quick', name: auth?.name ?? profile.pseudo })
+  netStatus('Recherche d’un adversaire…')
 })
 
 rematchBtn.addEventListener('click', () => {
@@ -881,21 +993,12 @@ resignBtn.addEventListener('click', () => {
   if (mode === 'online' && online) online.net.send({ type: 'resign' })
 })
 
-levelSel.addEventListener('change', () => {
-  level = levelSel.value as Level
+levelSelEl.addEventListener('change', () => {
+  level = levelSelEl.value as Level
 })
 
-sideSel.addEventListener('change', () => {
-  if (mode === 'online') {
-    sideSel.value = humanSide
-    return
-  }
-  if (aiThinking) {
-    sideSel.value = humanSide
-    return
-  }
-  humanSide = sideSel.value as Color
-  afterMove()
+sideSelEl.addEventListener('change', () => {
+  humanSide = sideSelEl.value as Color
 })
 
 /* ==================== NAVIGATION & VUES ==================== */
@@ -958,6 +1061,8 @@ resetStats.addEventListener('click', () => {
 
 refresh()
 showView('play')
+showLobby()
+renderAuthZone()
 requestAnimationFrame(render)
 
 function fmtCp(cp: number): string {
@@ -1006,4 +1111,5 @@ function updateAnalysisPanel(): void {
     .join('')
   infoEl.textContent = `profondeur ${a.depth} · ${(a.nodes / 1000).toFixed(0)}k nœuds · ${a.ms} ms`
 }
+
 

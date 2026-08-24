@@ -221,6 +221,29 @@ function locate(ws: WebSocket): { room: Room; me: number } | null {
   return null
 }
 
+function lobbyList() {
+  return [...rooms.values()].map((r) => ({
+    id: r.id,
+    host: r.seats[0].name || '?',
+    guest: r.seats[1].ws ? r.seats[1].name : null,
+    clockKey: r.clockKey,
+    status:
+      r.result || r.game.winner
+        ? 'over'
+        : r.seats.every((s) => s.ws)
+          ? 'playing'
+          : 'waiting',
+    rated: !!(r.seats[0].account && r.seats[1].account),
+  }))
+}
+
+function broadcastLobby(): void {
+  const payload = { type: 'lobby', rooms: lobbyList(), online: wss.clients.size }
+  for (const client of wss.clients) {
+    if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(payload))
+  }
+}
+
 wss.on('connection', (ws) => {
   send(ws, {
     type: 'lobby',
@@ -263,8 +286,8 @@ wss.on('connection', (ws) => {
   }
 
   ws.on('message', (data) => {
-    let msg: Record<string, unknown>
     try {
+    let msg: Record<string, unknown>
       msg = JSON.parse(String(data))
     } catch {
       return
@@ -283,6 +306,7 @@ wss.on('connection', (ws) => {
           { ws: null, name: '' },
         ],
         wantRematch: [false, false],
+        clockKey: String(msg.clock ?? 'none'),
       }
       if (cfg) r.clock = { cfg, rem: [cfg.base, cfg.base], turnStart: Date.now() }
       rooms.set(r.id, r)
@@ -312,8 +336,7 @@ wss.on('connection', (ws) => {
         const A = quickQueue.shift()!
         const B = quickQueue.shift()!
         const cfg = FAST ? { base: 600, inc: 0 } : CLOCKS['5+0']
-        const colors: Color[] =
-          Math.random() < 0.5 ? ['black', 'white'] : ['white', 'black']
+        const colors: Color[] = Math.random() < 0.5 ? ['black', 'white'] : ['white', 'black']
         const r: Room = {
           id: genCode(),
           game: new Game(),
@@ -326,7 +349,6 @@ wss.on('connection', (ws) => {
           clock: { cfg, rem: [cfg.base, cfg.base], turnStart: Date.now() },
         }
         rooms.set(r.id, r)
-        broadcastLobby()
         ;[A, B].forEach((q, i) => {
           send(q.ws, {
             type: 'joined',
@@ -363,6 +385,8 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'error', message: 'Salon complet' })
         return
       }
+
+
       const name = String(msg.name ?? 'Joueur').slice(0, 24)
       target.seats[free] = { ws, name, account: authName ?? undefined, color: COLORS[free] }
       send(ws, {
@@ -390,6 +414,7 @@ wss.on('connection', (ws) => {
     const myColor = room.seats[me].color
 
     if (type === 'move') {
+      appendFileSync(join(process.cwd(), 'srv-dbg.txt'), `[move] my=${myColor} turn=${room.game.position.turn} mc=${room.game.position.moveCount} seats=${JSON.stringify(room.seats.map((s) => ({ n: s.name, c: s.color })))}\n`)
       if (room.game.winner || room.result) {
         send(ws, { type: 'error', message: 'La partie est finie' })
         return
@@ -398,12 +423,13 @@ wss.on('connection', (ws) => {
         send(ws, { type: 'error', message: 'Ce n’est pas ton tour' })
         return
       }
+      const meIdx = me
       const now = Date.now()
       if (room.clock && !FAST) {
-        room.clock.rem[me] -= now - room.clock.turnStart
+        room.clock.rem[meIdx] -= now - room.clock.turnStart
         room.clock.turnStart = now
-        if (room.clock.rem[me] <= 0) {
-          room.clock.rem[me] = 0
+        if (room.clock.rem[meIdx] <= 0) {
+          room.clock.rem[meIdx] = 0
           endRoomGame(room, other(myColor), 'temps')
           return
         }
@@ -414,7 +440,7 @@ wss.on('connection', (ws) => {
         return
       }
       if (room.clock) {
-        room.clock.rem[me] += room.clock.cfg.inc
+        room.clock.rem[meIdx] += room.clock.cfg.inc
         room.clock.turnStart = now
       }
       send(opponentOf(room, me).ws, { type: 'move', action })
@@ -441,8 +467,10 @@ wss.on('connection', (ws) => {
     }
 
     if (type === 'rematch') {
+      console.log('[rematch] me=', me, 'result=', !!room.result, 'winner=', room.game.winner)
       if (!room.result && !room.game.winner) return
       room.wantRematch[me] = true
+      console.log('[rematch] flags=', room.wantRematch)
       if (room.wantRematch[0] && room.wantRematch[1]) {
         room.game = new Game()
         room.result = undefined
@@ -451,23 +479,27 @@ wss.on('connection', (ws) => {
           room.clock.rem = [room.clock.cfg.base, room.clock.cfg.base]
           room.clock.turnStart = Date.now()
         }
+        const r = room
         room.seats.forEach((s) => {
           send(s.ws, {
             type: 'joined',
-            code: room.id,
+            code: r.id,
             color: other(s.color),
-            state: publicState(room),
-            oppName: room.seats.find((x) => x !== s)?.name ?? '',
-            myRating: publicByName(s.account)?.rating ?? null,
-            oppRating: publicByName(room.seats.find((x) => x !== s)?.account)?.rating ?? null,
+            state: publicState(r),
+            oppName: r.seats.find((x) => x !== s)?.name ?? '',
           })
         })
         broadcast(room, { type: 'start' })
-        broadcastLobby()
       } else {
         send(ws, { type: 'rematch-wait' })
       }
       return
+    }
+    } catch (err) {
+      appendFileSync(
+        join(process.cwd(), 'srv-dbg.txt'),
+        'ERR ' + String(err) + '\n' + ((err as Error).stack ?? '') + '\n',
+      )
     }
   })
 

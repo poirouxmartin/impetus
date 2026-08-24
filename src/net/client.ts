@@ -24,6 +24,15 @@ export interface ServerProfile {
   draws: number
 }
 
+export interface LobbyRoom {
+  id: string
+  host: string
+  guest: string | null
+  clockKey: string
+  status: 'waiting' | 'playing' | 'over'
+  rated: boolean
+}
+
 export type ServerMsg =
   | {
       type: 'joined'
@@ -48,6 +57,7 @@ export type ServerMsg =
   | { type: 'auth-ok'; token: string; profile: ServerProfile }
   | { type: 'auth-error'; message: string }
   | { type: 'ranked'; delta: number; rating: number; oppRating: number }
+  | { type: 'lobby'; rooms: LobbyRoom[]; online: number }
 
 export interface NetClient {
   send(msg: unknown): void

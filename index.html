@@ -13,12 +13,83 @@
         <button class="navbtn" data-view="history">Parties</button>
         <button class="navbtn" data-view="profile">Profil</button>
       </div>
+      <div id="nav-auth"></div>
     </nav>
 
     <div id="views">
       <!-- ==================== JOUER ==================== -->
       <section id="view-play" class="view active">
-        <div id="layout">
+
+        <!-- ======= LOBBY ======= -->
+        <div id="lobby" class="page">
+          <div class="card hero">
+            <h1 class="logo">IMPETUS</h1>
+            <p class="tagline">Glisse. Bloque. Percée.</p>
+            <div class="tiles">
+              <button class="tile" id="quick">
+                <span class="t-icon">⚡</span>
+                <span class="t-label">Partie rapide</span>
+                <small>classée si connecté · 5 min</small>
+              </button>
+              <button class="tile" id="tile-ai">
+                <span class="t-icon">🤖</span>
+                <span class="t-label">Contre l'IA</span>
+                <small>3 niveaux · entraînement</small>
+              </button>
+              <button class="tile" id="tile-local">
+                <span class="t-icon">👥</span>
+                <span class="t-label">2 joueurs</span>
+                <small>même écran</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="card wide">
+            <h2>Salons ouverts <span id="online-count" class="pill"></span></h2>
+            <table id="lobby-table">
+              <thead>
+                <tr><th>Code</th><th>Hôte</th><th>Adversaire</th><th>Cadence</th><th>Classé</th><th>Statut</th><th></th></tr>
+              </thead>
+              <tbody id="lobby-body"></tbody>
+            </table>
+            <details id="private-zone">
+              <summary>Salon privé (code)</summary>
+              <label class="check"><span>Cadence</span>
+                <select id="clock-sel">
+                  <option value="3+2" selected>3 min + 2 s</option>
+                  <option value="5+0">5 min</option>
+                  <option value="none">Sans horloge</option>
+                </select>
+              </label>
+              <button id="room-create">Créer un salon</button>
+              <div class="row">
+                <input id="room-code" maxlength="4" placeholder="CODE" style="text-transform:uppercase" />
+                <button id="room-join">Rejoindre</button>
+              </div>
+            </details>
+            <div id="net-status"></div>
+          </div>
+
+          <aside class="card" style="max-width:300px">
+            <h2>Compte</h2>
+            <form id="auth-form">
+              <input id="auth-name" placeholder="Pseudo" maxlength="16" autocomplete="username" />
+              <input id="auth-pass" type="password" placeholder="Mot de passe" maxlength="64" autocomplete="current-password" />
+              <div class="row">
+                <button type="button" id="auth-login" style="flex:1">Se connecter</button>
+                <button type="button" id="auth-register" style="flex:1">Créer un compte</button>
+              </div>
+            </form>
+            <div id="auth-info" hidden>
+              <div class="authed-line"><span id="auth-pseudo"></span><span class="elo" id="auth-elo"></span></div>
+              <button id="auth-logout" class="mini">Déconnexion</button>
+            </div>
+            <div id="auth-status">Connecte-toi pour que tes parties rapides comptent pour ton Elo.</div>
+          </aside>
+        </div>
+
+        <!-- ======= PARTIE EN COURS ======= -->
+        <div id="game-wrap" hidden>
           <div id="board-area">
             <div id="evalbar"><div id="evalbar-white"></div></div>
             <div id="board-stack">
@@ -30,87 +101,55 @@
                 </div>
               </div>
             </div>
+            <aside id="panel">
+              <div id="status"></div>
+              <div id="clocks" hidden>
+                <div id="clk-white" class="clk">–:––</div>
+                <div id="clk-black" class="clk">–:––</div>
+              </div>
+              <div id="reserves"></div>
+              <section class="group" id="settings-group">
+                <label id="side-label">
+                  <span>Ta couleur</span>
+                  <select id="side">
+                    <option value="black" selected>Noir (commence)</option>
+                    <option value="white">Blanc</option>
+                  </select>
+                </label>
+                <label id="level-label">
+                  <span>Niveau de l'IA</span>
+                  <select id="level">
+                    <option value="facile">Facile</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="difficile">Difficile</option>
+                  </select>
+                </label>
+              </section>
+              <section class="group">
+                <label class="check">
+                  <input type="checkbox" id="live" />
+                  <span>Analyse en direct</span>
+                </label>
+                <div id="eval-line">Analyse désactivée</div>
+                <div id="lines"></div>
+                <div id="engine-info"></div>
+              </section>
+              <div id="controls">
+                <button id="new">Nouvelle partie</button>
+                <button id="undo" disabled>Annuler</button>
+                <button id="swap" hidden>Échanger (swap)</button>
+                <button id="resign" class="danger" hidden>Abandonner</button>
+              </div>
+              <div id="controls-online">
+                <button id="rematch" hidden>Revanche</button>
+                <button id="back-lobby" class="mini">← Retour au lobby</button>
+              </div>
+              <p class="hint">
+                Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
+                capture). Trois façons de gagner : percée, anéantissement, immobilisation.
+              </p>
+            </aside>
           </div>
-          <aside id="panel">
-            <div id="clocks" hidden>
-            <div id="clk-white" class="clk">–:––</div>
-            <div id="clk-black" class="clk">–:––</div>
-          </div>
-          <div id="status"></div>
-            <div id="reserves"></div>
-            <section class="group">
-              <label id="mode-label">
-                <span>Mode</span>
-                <select id="mode">
-                  <option value="ai" selected>Contre l'IA</option>
-                  <option value="hotseat">2 joueurs</option>
-                  <option value="online">En ligne</option>
-                </select>
-              </label>
-              <label id="side-label">
-                <span>Ta couleur</span>
-                <select id="side">
-                  <option value="black" selected>Noir (commence)</option>
-                  <option value="white">Blanc</option>
-                </select>
-              </label>
-              <label id="level-label">
-                <span>Niveau de l'IA</span>
-                <select id="level">
-                  <option value="facile">Facile</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="difficile">Difficile</option>
-                </select>
-              </label>
-            </section>
-            <section class="group">
-              <label class="check">
-                <input type="checkbox" id="live" />
-                <span>Analyse en direct</span>
-              </label>
-              <div id="eval-line">Analyse désactivée</div>
-              <div id="lines"></div>
-              <div id="engine-info"></div>
-            </section>
-            <section class="group" id="online-group" hidden>
-              <div class="row" id="auth-zone">
-                <input id="auth-name" placeholder="Pseudo" maxlength="16" style="flex:1" />
-                <input id="auth-pass" type="password" placeholder="Mot de passe" maxlength="64" style="flex:1" />
-              </div>
-              <div class="row">
-                <button id="auth-login" style="flex:1">Se connecter</button>
-                <button id="auth-register" style="flex:1">Créer un compte</button>
-              </div>
-              <div id="auth-status">Non connecté — les parties rapides ne seront pas classées.</div>
-              <hr class="sep" />
-              <label class="check">
-                <span>Cadence</span>
-                <select id="clock-sel">
-                  <option value="3+2" selected>3 min + 2 s</option>
-                  <option value="5+0">5 min</option>
-                  <option value="none">Sans horloge</option>
-                </select>
-              </label>
-              <button id="quick" class="quick">⚡ Partie rapide</button>
-              <div id="net-status">Non connecté</div>
-              <div class="row">
-                <input id="room-code" maxlength="4" placeholder="CODE" style="text-transform:uppercase" />
-                <button id="room-join">Rejoindre</button>
-              </div>
-              <button id="room-create">Créer un salon</button>
-              <button id="rematch" hidden>Revanche</button>
-              <button id="resign" class="danger" hidden>Abandonner</button>
-            </section>
-            <div id="controls">
-              <button id="new">Nouvelle partie</button>
-              <button id="undo" disabled>Annuler</button>
-              <button id="swap" hidden>Échanger (swap)</button>
-            </div>
-            <p class="hint">
-              Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
-              capture). Trois façons de gagner : percée, anéantissement, immobilisation.
-            </p>
-          </aside>
         </div>
       </section>
 
