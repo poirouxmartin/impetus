@@ -137,6 +137,10 @@
                     <option value="difficile">Difficile</option>
                   </select>
                 </label>
+                <label class="check" id="delayed-label">
+                  <input type="checkbox" id="delayed" />
+                  <span>Percée différée (expérimental)</span>
+                </label>
               </section>
               <section class="group">
                 <label class="check">
@@ -157,7 +161,7 @@
                 <button id="rematch" hidden>Revanche</button>
                 <button id="back-lobby" class="mini">← Retour au lobby</button>
               </div>
-              <p class="hint">
+              <p class="hint" id="rules-hint">
                 Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
                 capture). Trois façons de gagner : percée, anéantissement, immobilisation.
               </p>

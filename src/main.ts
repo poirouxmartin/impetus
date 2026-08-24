@@ -8,8 +8,10 @@ import {
   SIZE,
   START_RESERVE,
   WinReason,
+  hasBreakthrough,
   idx,
   other,
+  setRules,
   slideDestination,
 } from './core/rules'
 import { Level, chooseAction } from './core/ai'
@@ -43,6 +45,9 @@ const bannerTitle = document.querySelector('#banner .title')!
 const bannerSub = document.querySelector('#banner .sub')!
 const sideLabel = document.getElementById('side-label') as HTMLElement
 const levelLabel = document.getElementById('level-label') as HTMLElement
+const delayedLabel = document.getElementById('delayed-label') as HTMLElement
+const delayedCb = document.getElementById('delayed') as HTMLInputElement
+const hintEl = document.getElementById('rules-hint')!
 const newBtn = document.getElementById('new') as HTMLButtonElement
 const undoBtn = document.getElementById('undo') as HTMLButtonElement
 const swapBtn = document.getElementById('swap') as HTMLButtonElement
@@ -255,6 +260,7 @@ function handleNet(msg: ServerMsg): void {
       if (!currentNet) return
       online = { net: currentNet, code: msg.code, color: msg.color, oppName: msg.oppName }
       humanSide = msg.color
+      setRules()
       game = new Game()
       movesLog = []
       recorded = false
@@ -405,6 +411,7 @@ function refresh(): void {
   const w = game.winner
 
   sideLabel.hidden = levelLabel.hidden = mode !== 'ai'
+  delayedLabel.hidden = mode === 'online'
   swapBtn.hidden = !(game.swapAvailable() && (mode === 'hotseat' || pos.turn === humanSide))
   undoBtn.disabled = !game.canUndo() || aiThinking || mode === 'online'
 
@@ -441,10 +448,13 @@ function refresh(): void {
     statusEl.innerHTML = `L'IA réfléchit<span class="dots"></span>`
     bannerEl.hidden = true
   } else {
+    const pending = delayedCb.checked && mode !== 'online' && hasBreakthrough(pos, other(pos.turn))
     statusEl.textContent =
       mode === 'online' && online
         ? `Toi : ${displayName(online.color)} · Trait : ${displayName(pos.turn)}`
-        : `Tour : ${NAME[pos.turn]}`
+        : pending
+          ? `Tour : ${NAME[pos.turn]} — percée en attente : capture ou perds`
+          : `Tour : ${NAME[pos.turn]}`
     bannerEl.hidden = true
   }
 
@@ -884,6 +894,7 @@ newBtn.addEventListener('click', () => {
     netStatus('Utilise « Abandonner » pour quitter la partie en ligne.')
     return
   }
+  applyRuleVariant()
   game = new Game()
   gameId++
   recorded = false
@@ -893,6 +904,24 @@ newBtn.addEventListener('click', () => {
 })
 
 /* ==== Écrans lobby / partie ==== */
+const HINT_STD =
+  'Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi = capture). Trois façons de gagner : percée, anéantissement, immobilisation.'
+const HINT_DELAYED =
+  'Expérimental — percée différée : une pierre sur la rangée adverse ne gagne que si elle survit à une riposte (l\'adversaire doit la capturer).'
+
+/** Applique la variante de règles choisie (local uniquement) ; coupe l'analyse, fausse en différée. */
+function applyRuleVariant(): void {
+  const delayed = delayedCb.checked
+  setRules(delayed ? { breakthroughDelay: true } : undefined)
+  hintEl.textContent = delayed ? HINT_DELAYED : HINT_STD
+  if (delayed && liveCb.checked) {
+    liveCb.checked = false
+    liveOn = false
+    analysis = null
+    updateAnalysisPanel()
+    syncAnalysis()
+  }
+}
 
 function showLobby(): void {
   lobbyEl.hidden = false
@@ -907,6 +936,7 @@ function showGame(): void {
 
 function startAiGame(): void {
   mode = 'ai'
+  applyRuleVariant()
   game = new Game()
   humanSide = sideSelEl.value as Color
   level = levelSelEl.value as Level
@@ -922,6 +952,7 @@ function startAiGame(): void {
 
 function startLocalGame(): void {
   mode = 'hotseat'
+  applyRuleVariant()
   game = new Game()
   gameId++
   recorded = false
