@@ -21,7 +21,7 @@
         <button class="navbtn" data-view="profile">Profil</button>
       </div>
       <div id="nav-auth"></div>
-      <button id="theme-toggle" title="Basculer jour / nuit">☾</button>
+      <button id="theme-toggle" title="Basculer jour / nuit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg></button>
     </nav>
 
     <div id="views">
@@ -75,21 +75,21 @@
               </label>
               <button id="room-create">Créer un salon</button>
               <div class="row">
-                <input id="room-code" maxlength="4" placeholder="CODE" style="text-transform:uppercase" />
+                <input id="room-code" maxlength="4" placeholder="CODE" />
                 <button id="room-join">Rejoindre</button>
               </div>
             </details>
             <div id="net-status">Multijoueur : lance `npm run server` pour ouvrir un salon.</div>
           </div>
 
-          <aside class="card" style="max-width:300px">
+          <aside class="card auth-card">
             <h2>Compte</h2>
             <form id="auth-form">
               <input id="auth-name" placeholder="Pseudo" maxlength="16" autocomplete="username" />
               <input id="auth-pass" type="password" placeholder="Mot de passe" maxlength="64" autocomplete="current-password" />
               <div class="row">
-                <button type="button" id="auth-login" style="flex:1">Se connecter</button>
-                <button type="button" id="auth-register" style="flex:1">Créer un compte</button>
+                <button type="button" id="auth-login">Se connecter</button>
+                <button type="button" id="auth-register">Créer un compte</button>
               </div>
             </form>
             <div id="auth-info" hidden>
@@ -189,11 +189,11 @@
             <h2>Relecture</h2>
             <canvas id="replay-canvas" width="468" height="468"></canvas>
             <div id="replay-controls">
-              <button id="rp-start" title="Début">⏮</button>
-              <button id="rp-prev" title="Coup précédent">◀</button>
-              <button id="rp-auto" title="Lecture automatique">▶</button>
-              <button id="rp-next" title="Coup suivant">▶|</button>
-              <button id="rp-end" title="Fin">⏭</button>
+              <button id="rp-start" title="Début"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h2v14H6zm12 0l-9 7 9 7z"/></svg></button>
+              <button id="rp-prev" title="Coup précédent"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <button id="rp-auto" title="Lecture automatique"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+              <button id="rp-next" title="Coup suivant"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+              <button id="rp-end" title="Fin"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 5h2v14h-2zM6 5l9 7-9 7z"/></svg></button>
               <span id="rp-info"></span>
             </div>
           </div>

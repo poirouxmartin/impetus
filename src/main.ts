@@ -94,6 +94,11 @@ const clkWhite = document.getElementById('clk-white') as HTMLElement
 const clocksEl = document.getElementById('clocks') as HTMLElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
+const quickLabel = quickBtn.querySelector('.t-label') as HTMLElement
+
+function setQuickLabel(text: string): void {
+  quickLabel.textContent = text
+}
 const rematchBtn = document.getElementById('rematch') as HTMLButtonElement
 const lobbyEl = document.getElementById('lobby') as HTMLElement
 const gameWrap = document.getElementById('game-wrap') as HTMLElement
@@ -299,12 +304,12 @@ function handleNet(msg: ServerMsg): void {
       break
     case 'queued':
       inQueue = true
-      quickBtn.textContent = '✕ Annuler la recherche'
+      setQuickLabel('Annuler la recherche')
       netStatus(`Recherche d'un adversaire… (${msg.count ?? 1} en file)`)
       break
     case 'queue-left':
       inQueue = false
-      quickBtn.textContent = '⚡ Partie rapide'
+      setQuickLabel('Partie rapide')
       netStatus('Recherche annulée.')
       break
     case 'rematch-wait':
@@ -1097,10 +1102,20 @@ resetStats.addEventListener('click', () => {
 
 const themeName = initTheme()
 const themeToggle = document.getElementById('theme-toggle') as HTMLButtonElement
-themeToggle.textContent = themeName === 'dark' ? '☀' : '☾'
+
+const ICON_SUN =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>'
+const ICON_MOON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
+
+function renderThemeIcon(t: string): void {
+  themeToggle.innerHTML = t === 'dark' ? ICON_SUN : ICON_MOON
+}
+
+renderThemeIcon(themeName)
 themeToggle.addEventListener('click', () => {
   const t = toggleTheme()
-  themeToggle.textContent = t === 'dark' ? '☀' : '☾'
+  renderThemeIcon(t)
 })
 
 refresh()
