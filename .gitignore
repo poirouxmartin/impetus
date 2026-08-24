@@ -5,3 +5,7 @@ dist-server/
 
 srv-*.txt
 data/
+
+server/*.bak
+scripts/dofix*.mjs
+scripts/scan*.mjs
