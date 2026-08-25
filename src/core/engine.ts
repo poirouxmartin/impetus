@@ -170,20 +170,22 @@ function applyMove(st: St, m: Move): Undo {
     st.key ^= zCell[me - 1][m.to]
     st.key2 ^= zCell[me - 1][m.to]
   } else {
-    const origin = st.b.indexOf(me)
+    // Swap : l'unique pierre sur le plateau appartient à l'ADVERSAIRE (le premier
+    // joueur) — on la retire, on pose la nôtre en miroir, réserves noir +1 / blanc -1.
+    const origin = st.b.indexOf(opp)
     st.b[origin] = EMPTY
-    st.key ^= zCell[me - 1][origin]
-    st.key2 ^= zCell[me - 1][origin]
+    st.cnt[opp - 1]--
+    st.key ^= zCell[opp - 1][origin]
+    st.key2 ^= zCell[opp - 1][origin]
     const mirrorR = S - 1 - Math.floor(origin / S)
     const mirrorC = S - 1 - (origin % S)
     const mirror = mirrorR * S + mirrorC
-    st.b[mirror] = opp
-    st.cnt[me - 1]--
-    st.cnt[opp - 1]++
-    st.res[me - 1]++
-    st.res[opp - 1]--
-    st.key ^= zCell[opp - 1][mirror]
-    st.key2 ^= zCell[opp - 1][mirror]
+    st.b[mirror] = me
+    st.cnt[me - 1]++
+    st.key ^= zCell[me - 1][mirror]
+    st.key2 ^= zCell[me - 1][mirror]
+    st.res[0]++
+    st.res[1]--
   }
   st.turn = opp
   st.mc++
@@ -209,13 +211,14 @@ function unmakeMove(st: St, m: Move, u: Undo): void {
     if (m.capture) st.cnt[opp - 1]++
     st.b[m.from] = me
   } else {
-    const origin = st.b.indexOf(opp)
-    st.b[origin] = EMPTY
-    st.cnt[opp - 1]--
-    const srcR = S - 1 - Math.floor(origin / S)
-    const srcC = S - 1 - (origin % S)
-    st.b[srcR * S + srcC] = me
-    st.cnt[me - 1]++
+    // Défaire le swap : retirer notre pierre du miroir, restaurer celle de l'adversaire à l'origine.
+    const originMirror = st.b.indexOf(me)
+    st.b[originMirror] = EMPTY
+    st.cnt[me - 1]--
+    const srcR = S - 1 - Math.floor(originMirror / S)
+    const srcC = S - 1 - (originMirror % S)
+    st.b[srcR * S + srcC] = opp
+    st.cnt[opp - 1]++
   }
   st.key = u.key
   st.key2 = u.key2
@@ -341,6 +344,33 @@ export function notation(action: Action): string {
   return `${sq(action.row * S + action.col)}→${sq(
     slideDestIndexFromAction(action),
   )}`
+}
+
+/** Applique un coup via le moteur interne et retourne la Position résultante (parité avec rules). */
+export function engineApply(pos: Position, action: Action): Position {
+  const st = fromPosition(pos)
+  const moves: Move[] = []
+  genMoves(st, moves, false)
+  const target = notation(action)
+  const m = moves.find((x) => notation(moveToAction(x)) === target)
+  if (!m) throw new Error(`coup introuvable dans le moteur : ${target}`)
+  applyMove(st, m)
+  const cells: (Color | null)[] = []
+  for (let i = 0; i < S * S; i++) {
+    cells.push(st.b[i] === BLACK ? 'black' : st.b[i] === WHITE ? 'white' : null)
+  }
+  return {
+    cells,
+    reserves: { black: st.res[0], white: st.res[1] },
+    turn: st.turn === BLACK ? 'black' : 'white',
+    moveCount: st.mc,
+    swapped: st.sw,
+  }
+}
+
+/** Clé Zobrist d'une position (parité moteur/rules dans les tests). */
+export function engineKey(pos: Position): number {
+  return fromPosition(pos).key
 }
 
 function slideDestIndexFromAction(a: Extract<Action, { kind: 'slide' }>): number {

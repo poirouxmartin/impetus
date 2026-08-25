@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Action, Color, SIZE, applyAction, initialState, legalActions, setRules } from './rules'
-import { analyse, engineActions, Analyzer, notation } from './engine'
+import { analyse, engineActions, engineApply, engineKey, Analyzer, notation } from './engine'
 
 const WIN = 1_000_000
 
@@ -27,6 +27,35 @@ describe('moteur d analyse', () => {
       if (moves.length === 0) break
       pos = applyAction(pos, moves[Math.floor(Math.random() * moves.length)])
     }
+  })
+
+  it('parité rules/moteur sur un parcours aléatoire (état et clé Zobrist)', () => {
+    let pos = initialState()
+    for (let step = 0; step < 120; step++) {
+      const moves = legalActions(pos)
+      if (moves.length === 0) break
+      const action = moves[Math.floor(Math.random() * moves.length)]
+      const afterRules = applyAction(pos, action)
+      const afterEngine = engineApply(pos, action)
+      expect(afterEngine.cells).toEqual(afterRules.cells)
+      expect(afterEngine.reserves).toEqual(afterRules.reserves)
+      expect(afterEngine.turn).toBe(afterRules.turn)
+      expect(afterEngine.moveCount).toBe(afterRules.moveCount)
+      expect(afterEngine.swapped).toBe(afterRules.swapped)
+      expect(engineKey(afterEngine)).toBe(engineKey(afterRules))
+      pos = afterRules
+    }
+  })
+
+  it('le swap du moteur transforme la pierre adverse, réserves noir +1 / blanc -1', () => {
+    const pos = applyAction(initialState(), { kind: 'place', row: 0, col: 3 })
+    const afterRules = applyAction(pos, { kind: 'swap' })
+    const afterEngine = engineApply(pos, { kind: 'swap' })
+    expect(afterEngine.cells).toEqual(afterRules.cells)
+    expect(afterEngine.reserves).toEqual({ black: 10, white: 9 })
+    expect(afterEngine.turn).toBe('black')
+    expect(afterEngine.swapped).toBe(true)
+    expect(engineKey(afterEngine)).toBe(engineKey(afterRules))
   })
 
   it('trouve la percée immédiate et la note en conséquence', () => {
