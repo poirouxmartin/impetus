@@ -32,11 +32,12 @@ export function renderRatings(container: HTMLElement, p: Profile): void {
 
 function spark(canvas: HTMLCanvasElement, values: number[]): void {
   const ctx = canvas.getContext('2d')!
+  canvas.width = canvas.clientWidth || 220
   ctx.clearRect(0, 0, canvas.width, canvas.height)
   if (values.length < 2) {
     ctx.fillStyle = '#5a6069'
-    ctx.font = '11px system-ui'
-    ctx.fillText('pas assez de parties classées', 4, 21)
+    ctx.font = '11px Marcellus, serif'
+    ctx.fillText(t('ratings.not.enough'), 4, 21)
     return
   }
   const min = Math.min(...values)

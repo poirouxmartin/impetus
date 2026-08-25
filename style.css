@@ -46,7 +46,7 @@ canvas {
   background: var(--bg-soft);
   box-shadow: var(--shadow-card);
   touch-action: manipulation;
-  max-width: min(92vw, 630px);
+  max-width: min(calc(92vw - 14px), 630px);
   max-height: calc(100vh - 290px);
   min-width: 300px;
   height: auto;
@@ -275,21 +275,19 @@ button:disabled {
 
 #board-area {
   display: flex;
-  justify-content: center;
+  align-items: stretch;
 }
 
+/* Barre d'éval collée au bord gauche du plateau, coins conjoints. */
 #evalbar {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  bottom: 10px;
-  width: 8px;
-  border-radius: var(--r-full);
+  width: 12px;
+  flex: none;
+  border-radius: var(--r-md) 0 0 var(--r-md);
   background: var(--evalbar-bg);
   border: 1px solid var(--line);
+  border-right: none;
+  position: relative;
   overflow: hidden;
-  z-index: 5;
-  opacity: 0.92;
 }
 
 #evalbar-white {
@@ -319,7 +317,13 @@ button:disabled {
 }
 
 #board-stack {
+  flex: 1;
   position: relative;
+}
+
+#board-stack canvas {
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  border-left: none;
 }
 
 .group label.check {
@@ -330,7 +334,7 @@ button:disabled {
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   color: var(--text);
   cursor: pointer;
   justify-content: flex-start;
@@ -436,6 +440,7 @@ button:disabled {
   flex-direction: column;
   max-width: 520px;
   margin: 0 auto;
+  align-items: stretch;
 }
 
 .card {
@@ -539,7 +544,7 @@ button.mini {
 
 .spark {
   display: block;
-  width: 220px;
+  width: 100%;
   height: 34px;
 }
 
@@ -581,6 +586,7 @@ button.danger:hover:not(:disabled) {
 }
 
 #auth-status {
+  margin-top: 12px;
   font-size: var(--fs-xs);
   color: var(--muted);
 }
