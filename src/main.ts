@@ -230,7 +230,16 @@ function handleAuthOk(token: string, p: { name: string; rating: number }): void 
   renderAuthZone()
 }
 
-const replayer = new ReplayViewer(replayCanvas, replayInfo)
+const replayer = new ReplayViewer(replayCanvas, {
+  infoEl: replayInfo,
+  nameTopEl: document.getElementById('rp-name-top')!,
+  nameBottomEl: document.getElementById('rp-name-bottom')!,
+  avatarTopEl: document.getElementById('rp-avatar-top')!,
+  avatarBottomEl: document.getElementById('rp-avatar-bottom')!,
+  clockTopEl: document.getElementById('rp-clock-top')!,
+  clockBottomEl: document.getElementById('rp-clock-bottom')!,
+  evalCanvas: document.getElementById('replay-eval') as HTMLCanvasElement,
+})
 
 function stonesOnBoard(color: Color): number {
   let n = 0
@@ -481,6 +490,12 @@ function refresh(): void {
         reason: reasonText,
         plies: pos.moveCount,
         moves: movesLog,
+        clock: localClock
+          ? {
+              cadence: cadenceSel.options[cadenceSel.selectedIndex]?.text ?? '',
+              left: { black: localClock.black, white: localClock.white },
+            }
+          : null,
       }
       historyRecords.unshift(rec)
       saveHistory(store, historyRecords)
@@ -1257,7 +1272,19 @@ window.addEventListener('keydown', (e) => {
 
 function openReplay(rec: GameRecord): void {
   replayCard.hidden = false
-  replayer.load(rec)
+  const topColor = other(rec.color)
+  const top =
+    rec.level === 'hotseat'
+      ? colorName(topColor)
+      : rec.level === 'online'
+        ? t('level.online')
+        : t('ai.name', { level: rec.level.charAt(0).toUpperCase() + rec.level.slice(1) })
+  replayer.load(rec, {
+    top,
+    bottom: auth?.name ?? profile.pseudo,
+    topColor,
+    bottomColor: rec.color,
+  })
   replayCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 

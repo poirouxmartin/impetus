@@ -15,6 +15,12 @@ textarea {
   display: none !important;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 [data-theme='light'] {
   color-scheme: light;
 }
@@ -37,6 +43,7 @@ body {
 #game-wrap {
   display: flex;
   justify-content: center;
+  gap: 20px;
 }
 
 canvas {
@@ -515,6 +522,23 @@ button.mini {
 #replay-card canvas {
   max-width: 100%;
   height: auto;
+}
+
+#replay-card .player-banner {
+  margin-bottom: 10px;
+}
+
+#replay-card #replay-canvas {
+  margin: 4px 0 10px;
+}
+
+#replay-eval {
+  width: 100%;
+  height: 56px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  cursor: pointer;
 }
 
 .rating-row {

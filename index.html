@@ -207,7 +207,18 @@
           </div>
           <div class="card" id="replay-card" hidden>
             <h2 data-i18n="replay.title">Relecture</h2>
+            <div class="player-banner" id="rp-banner-top">
+              <span class="avatar" id="rp-avatar-top"></span>
+              <span class="pb-name" id="rp-name-top"></span>
+              <span class="pb-clock" id="rp-clock-top" hidden></span>
+            </div>
             <canvas id="replay-canvas" width="468" height="468"></canvas>
+            <div class="player-banner" id="rp-banner-bottom">
+              <span class="avatar" id="rp-avatar-bottom"></span>
+              <span class="pb-name" id="rp-name-bottom"></span>
+              <span class="pb-clock" id="rp-clock-bottom" hidden></span>
+            </div>
+            <canvas id="replay-eval" height="56"></canvas>
             <div id="replay-controls">
               <button id="rp-start" data-i18n-title="replay.start"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h2v14H6zm12 0l-9 7 9 7z"/></svg></button>
               <button id="rp-prev" data-i18n-title="replay.prev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>

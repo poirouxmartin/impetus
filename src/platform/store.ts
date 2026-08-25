@@ -33,6 +33,8 @@ export interface GameRecord {
   reason: string
   plies: number
   moves: Action[]
+  /** Horloge locale : cadence affichée + temps restant de chaque camp à la fin. */
+  clock?: { cadence: string; left: { black: number; white: number } } | null
 }
 
 export interface StorageLike {
