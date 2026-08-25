@@ -12,7 +12,7 @@ export let MAX_OCCURRENCES = 2
 /** Pierres requises simultanément sur la rangée adverse pour la percée. */
 export let BREAKTHROUGH = 1
 /** Percée différée : la pierre sur la rangée adverse doit survivre à une réponse adverse. */
-export let BREAKTHROUGH_DELAY = false
+export let BREAKTHROUGH_DELAY = true
 
 export interface RuleConfig {
   size: number
@@ -29,7 +29,7 @@ export const DEFAULT_RULES: RuleConfig = {
   range: 3,
   occurrences: 2,
   breakthrough: 1,
-  breakthroughDelay: false,
+  breakthroughDelay: true,
 }
 
 /** Configuration courante (pour transmettre les règles au worker d'analyse, par ex.). */

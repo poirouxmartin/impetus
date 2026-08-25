@@ -18,6 +18,7 @@
       <div class="nav-links">
         <button class="navbtn active" data-view="play" data-i18n="nav.play">Jouer</button>
         <button class="navbtn" data-view="history" data-i18n="nav.history">Parties</button>
+        <button class="navbtn" data-view="rules" data-i18n="nav.rules">Règles</button>
         <button class="navbtn" data-view="profile" data-i18n="nav.profile">Profil</button>
       </div>
       <div id="nav-auth"></div>
@@ -160,7 +161,7 @@
                 </label>
                 <label class="check" id="delayed-label">
                   <input type="checkbox" id="delayed" />
-                  <span data-i18n="delayed.label">Percée différée — survivre à une riposte</span>
+                  <span data-i18n="immediate.label">Percée immédiate — arrivée gagnante (rapide)</span>
                 </label>
                 <label class="check" id="sound-label">
                   <input type="checkbox" id="sound-cb" checked />
@@ -189,9 +190,9 @@
                 <button id="rematch" hidden data-i18n="rematch">Revanche</button>
                 <button id="back-lobby" class="mini" data-i18n="back.lobby">← Retour au lobby</button>
               </div>
-              <p class="hint" id="rules-hint" data-i18n="hint.std">
-                Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
-                capture). Trois façons de gagner : percée, anéantissement, immobilisation.
+              <p class="hint" id="rules-hint" data-i18n="hint.delayed">
+                Expérimental — percée différée : une pierre sur la rangée adverse ne gagne que si
+                elle survit à une riposte (l'adversaire doit la capturer).
               </p>
             </aside>
           </div>

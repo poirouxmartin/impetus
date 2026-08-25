@@ -6,18 +6,19 @@ Jeu de plateau abstrait 1v1, zéro hasard. Simple à apprendre (2 actions, 30 se
 
 Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, dévier, se fermer volontairement une sortie : l'espace lui-même est l'arme.
 
-## Règles (v1)
+## Règles (v1.2)
 
 - Plateau **9×9**. Réserve de **10 pierres** par joueur. Noir part du haut, Blanc du bas.
 - À son tour, chaque joueur exécute **une seule action** :
   1. **Poser** — placer une pierre de sa réserve sur une case vide de sa rangée de départ ;
   2. **Glisser** — choisir une de ses pierres et une direction (haut/bas/gauche/droite) : la pierre avance tout droit d'**au plus 3 cases** et s'arrête au premier obstacle rencontré. Obstacle adverse → **capture** (possible même case adjacente) ; obstacle allié ou bord → arrêt juste avant ; sinon elle s'arrête au bout de sa portée.
 - **Victoire** si :
-  - une pierre atteint la rangée de départ adverse (**percée**) ;
+  - une pierre survit **un coup** sur la rangée de départ adverse (**percée différée**) — l'adversaire a une riposte pour la capturer, sinon elle gagne ;
   - l'adversaire ne possède plus aucune pierre (**anéantissement**) ;
   - l'adversaire n'a aucun coup légal (**immobilisation**).
-- **Anti-répétition** : interdiction de recréer une position identique trois fois *(paramètre à calibrer)*.
+- **Anti-répétition** : interdiction de recréer une position identique trois fois.
 - **Règle du swap** : après le tout premier coup, le joueur 2 peut l'annuler — la pierre noire est retirée et une pierre blanche est posée à sa position symétrique (miroir central du plateau). Neutralise l'avantage du premier joueur sans changer les sièges.
+- *Variante rapide* : percée immédiate (l'arrivée gagne sans délai) — disponible dans le panneau de partie.
 
 ## Pourquoi ça peut être profond
 
@@ -31,13 +32,14 @@ Chaque pierre posée redessine tous les couloirs de glisse du plateau. Bloquer, 
 
 - **v1** — glisse illimitée jusqu'au premier obstacle.
 - **v1.1** — **portée de glisse limitée à 3 cases**, capture adjacente autorisée. *Raison* : les tests ont montré qu'à portée illimitée, Noir traverse le plateau vide dès son 2e coup et gagne trivialement. La portée 3 impose plusieurs coups exposés pour percer : défense et blocage redeviennent centraux.
+- **v1.2** — **percée différée** : une pierre sur la rangée adverse ne gagne que si elle **survit à une riposte** (l'adversaire doit pouvoir la capturer, sinon elle gagne au coup suivant). *Raison* : +37 % de longueur de partie, contrejeu défensif riche (doubles menaces, sacrifices protégés), équilibre confirmé au self-play (55/45, dans le bruit) — et une identité tactique propre. La percée immédiate reste disponible en variante.
 
 ## Questions ouvertes (à trancher par le test)
 
 - ~~Taille du plateau, taille de réserve, portée de glisse~~ → **tranché par sweep self-play (v1.2)** : 9×9 / réserve 10 / portée 3 est la seule config équilibrée testée (voir « Chiffres mesurés »)
 - ~~Forme exacte de l'anti-répétition~~ → occ2 (règle des 3 positions) conservée ; occ1 (ko strict) viable mais sans gain mesuré
 - ~~Nulles, parties infinies, gain forcé à l'ouverture~~ → **aucun des trois n'existe** : pas de règle de nulle (le jeu est toujours décisif), terminaison garantie par l'anti-répétition (états finis × 2 occurrences max), aucun gain forcé détecté à l'ouverture (profondeur 13 : score ≈ 0 ; première percée forcée détectée entre les coups 25 et 52, moyenne 37)
-- **Adopter la percée différée ?** (v1.2 candidate) : +37 % de longueur de partie, contrejeu défensif riche. IA (menace d'arrivée valorisée) et moteur d'analyse (détection de brèche à l'entrée de nœud, worker inclus) recalibrés : équilibre confirmé au self-play (55/45 à 64 parties, dans le bruit). Reste le verdict humain sur le ressenti.
+- ~~Adopter la percée différée ?~~ → **adoptée en v1.2** (standard) ; la percée immédiate reste disponible en variante locale. Biais Blanc léger (55/45) à surveiller en humain.
 - Faut-il diversifier les fins de partie ? Anéantissement/immobilisation restent des garde-fous : les rendre fréquentes exigerait de ralentir le jeu (percée×2) au prix de l'équilibre
 
 ## Outils

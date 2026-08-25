@@ -26,7 +26,7 @@ describe('chooseAction', () => {
   it('saisit la percée immédiate, quel que soit le niveau', () => {
     const pos = {
       ...initialState(),
-      cells: board({ 0: 'w........', 6: '....b....' }),
+      cells: board({ 6: '....b....', 8: 'w........' }),
       turn: 'black' as const,
       moveCount: 10,
     }

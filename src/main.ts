@@ -58,6 +58,7 @@ const sideLabel = document.getElementById('side-label') as HTMLElement
 const levelLabel = document.getElementById('level-label') as HTMLElement
 const delayedLabel = document.getElementById('delayed-label') as HTMLElement
 const delayedCb = document.getElementById('delayed') as HTMLInputElement
+const immediateCb = delayedCb
 const hintEl = document.getElementById('rules-hint')!
 const newBtn = document.getElementById('new') as HTMLButtonElement
 const undoBtn = document.getElementById('undo') as HTMLButtonElement
@@ -528,7 +529,7 @@ function refresh(): void {
     statusEl.innerHTML = `${t('ai.thinking')}<span class="dots"></span>`
     bannerEl.hidden = true
   } else {
-    const pending = delayedCb.checked && mode !== 'online' && hasBreakthrough(pos, other(pos.turn))
+    const pending = !immediateCb.checked && mode !== 'online' && hasBreakthrough(pos, other(pos.turn))
     statusEl.textContent =
       mode === 'online' && online
         ? t('you.turn', { color: displayName(online.color), turn: colorName(pos.turn) })
@@ -1125,10 +1126,10 @@ newBtn.addEventListener('click', () => {
 
 /* ==== Écrans lobby / partie ==== */
 
-/** Applique la variante de règles choisie (local uniquement). */
+/** Applique la variante de règles choisie (local uniquement). Cochée = percée immédiate (rapide). */
 function applyRuleVariant(): void {
-  const delayed = delayedCb.checked
-  setRules(delayed ? { breakthroughDelay: true } : undefined)
+  const delayed = !immediateCb.checked
+  setRules(delayed ? undefined : { breakthroughDelay: false })
   hintEl.textContent = t(delayed ? 'hint.delayed' : 'hint.std')
 }
 

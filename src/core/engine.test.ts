@@ -59,22 +59,27 @@ describe('moteur d analyse', () => {
   })
 
   it('trouve la percée immédiate et la note en conséquence', () => {
-    const pos = {
-      ...initialState(),
-      cells: (() => {
-        const c: (Color | null)[] = Array(SIZE * SIZE).fill(null)
-        c[7 * SIZE + 4] = 'black'
-        c[0] = 'white'
-        return c
-      })(),
-      reserves: { black: 5, white: 5 },
-      turn: 'black' as const,
-      moveCount: 10,
+    try {
+      setRules({ breakthroughDelay: false })
+      const pos = {
+        ...initialState(),
+        cells: (() => {
+          const c: (Color | null)[] = Array(SIZE * SIZE).fill(null)
+          c[7 * SIZE + 4] = 'black'
+          c[0] = 'white'
+          return c
+        })(),
+        reserves: { black: 5, white: 5 },
+        turn: 'black' as const,
+        moveCount: 10,
+      }
+      const a = analyse(pos, 400)
+      expect(a).not.toBeNull()
+      expect(a!.best!.action.kind).toBe('slide')
+      expect(a!.best!.score).toBeGreaterThan(WIN - 100)
+    } finally {
+      setRules()
     }
-    const a = analyse(pos, 400)
-    expect(a).not.toBeNull()
-    expect(a!.best!.action.kind).toBe('slide')
-    expect(a!.best!.score).toBeGreaterThan(WIN - 100)
   })
 
   it('percée différée : arrivée incapturable = mat forcé vu par le moteur', () => {

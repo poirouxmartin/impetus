@@ -120,16 +120,36 @@ describe('applyAction', () => {
 })
 
 describe('victoires', () => {
-  it('percée : pierre sur la rangée adverse', () => {
+  it('percée : pierre sur la rangée adverse (variante immédiate)', () => {
+    try {
+      setRules({ breakthroughDelay: false })
+      const before = {
+        ...initialState(),
+        cells: board({ 0: '....w....', 7: '....b....' }),
+        reserves: { black: 5, white: 5 },
+        moveCount: 8,
+        turn: 'black' as const,
+      }
+      const after = applyAction(before, { kind: 'slide', row: 7, col: 4, dir: 'down' })
+      expect(winnerAfter(after, 'black')).toBe('black')
+    } finally {
+      setRules()
+    }
+  })
+
+  it('percée différée : arrivée = menace, riposte incapable de capturer = victoire', () => {
+    // Noir arrive en e9 ; Blanc en a9 est hors de portée : la menace est incapturable.
     const before = {
       ...initialState(),
-      cells: board({ 0: '....w....', 7: '....b....' }),
+      cells: board({ 6: '....b....', 8: 'w........' }),
       reserves: { black: 5, white: 5 },
       moveCount: 8,
       turn: 'black' as const,
     }
-    const after = applyAction(before, { kind: 'slide', row: 7, col: 4, dir: 'down' })
-    expect(winnerAfter(after, 'black')).toBe('black')
+    const after = applyAction(before, { kind: 'slide', row: 6, col: 4, dir: 'down' })
+    expect(winnerAfter(after, 'black')).toBeNull()
+    expect(winnerAfter(after, 'white')).toBe('black')
+    expect(outcome(after, 'white', new Map())).toEqual({ winner: 'black', reason: 'percée' })
   })
 
   it('anéantissement : plus de pierres adverses ni de réserve', () => {
@@ -253,7 +273,7 @@ describe('divers', () => {
 
   it('percée paramétrable : BREAKTHROUGH pierres requises sur la rangée adverse', () => {
     try {
-      setRules({ breakthrough: 2 })
+      setRules({ breakthrough: 2, breakthroughDelay: false })
       const one = { ...initialState(), cells: board({ 8: '....b....' }) }
       expect(winnerAfter(one, 'black')).toBeNull()
       const two = { ...initialState(), cells: board({ 8: '.b..b....' }) }
