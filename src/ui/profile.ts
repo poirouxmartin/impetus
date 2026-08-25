@@ -1,12 +1,8 @@
 import { LEVEL_RATING, type GameRecord, type Profile, type RankedLevel } from '../platform/store'
+import { getLang, t } from './i18n'
 
-const LEVEL_LABEL: Record<RankedLevel | 'hotseat' | 'online', string> = {
-  facile: 'Facile',
-  normal: 'Normal',
-  difficile: 'Difficile',
-  hotseat: 'Local 2P',
-  online: 'En ligne',
-}
+const levelLabel = (key: RankedLevel | 'hotseat' | 'online'): string =>
+  t(`level.${key}`)
 
 export function renderRatings(container: HTMLElement, p: Profile): void {
   container.innerHTML = ''
@@ -17,10 +13,16 @@ export function renderRatings(container: HTMLElement, p: Profile): void {
     row.className = 'rating-row'
     row.innerHTML = `
       <div class="rating-head">
-        <span>${LEVEL_LABEL[level]}</span>
+        <span>${levelLabel(level)}</span>
         <strong>${st.rating}</strong>
       </div>
-      <div class="rating-sub">${games} partie${games > 1 ? 's' : ''} · ${st.wins}V ${st.losses}D${st.draws ? ` ${st.draws}N` : ''} · cible IA ${LEVEL_RATING[level]}</div>
+      <div class="rating-sub">${t('ratings.sub', {
+        games: `${games} ${t(games > 1 ? 'stats.games' : 'stats.game')}`,
+        w: `${st.wins}${t('stats.wins')}`,
+        l: `${st.losses}${t('stats.losses')}`,
+        d: st.draws ? ` ${st.draws}${t('stats.draws')}` : '',
+        target: String(LEVEL_RATING[level]),
+      })}</div>
       <canvas class="spark" width="220" height="34"></canvas>
     `
     container.appendChild(row)
@@ -61,30 +63,34 @@ export function renderHistory(
   for (const r of [...records].reverse()) {
     const tr = document.createElement('tr')
     tr.className = r.result === 'win' ? 'row-win' : r.result === 'loss' ? 'row-loss' : ''
-    const date = new Date(r.ts).toLocaleString('fr-FR', {
+    const date = new Date(r.ts).toLocaleString(getLang() === 'en' ? 'en-GB' : 'fr-FR', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     })
     const res =
-      r.result === 'win' ? '<span class="badge win">Victoire</span>'
-      : r.result === 'loss' ? '<span class="badge loss">Défaite</span>'
-      : '<span class="badge draw">Nul</span>'
+      r.result === 'win' ? `<span class="badge win">${t('badge.win')}</span>`
+      : r.result === 'loss' ? `<span class="badge loss">${t('badge.loss')}</span>`
+      : `<span class="badge draw">${t('badge.draw')}</span>`
+    const colorCell =
+      r.color === 'black' ? `● ${t('name.black')}`
+      : r.color === 'white' ? `○ ${t('name.white')}`
+      : '—'
     tr.innerHTML = `
       <td>${date}</td>
-      <td>${LEVEL_LABEL[r.level as RankedLevel] ?? r.level}</td>
-      <td>${r.color === 'black' ? '● Noir' : r.color === 'white' ? '○ Blanc' : '—'}</td>
+      <td>${levelLabel(r.level as RankedLevel) ?? r.level}</td>
+      <td>${colorCell}</td>
       <td>${res}</td>
       <td>${r.reason}</td>
       <td>${r.plies}</td>
-      <td><button class="mini" data-id="${r.id}">Revoir</button></td>
+      <td><button class="mini" data-id="${r.id}">${t('replay.open')}</button></td>
     `
     const btn = tr.querySelector<HTMLButtonElement>('button.mini')!
     btn.addEventListener('click', () => onSelect(r))
     tbody.appendChild(tr)
   }
   if (records.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Aucune partie enregistrée pour le moment.</td></tr>'
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">${t('history.empty')}</td></tr>`
   }
 }

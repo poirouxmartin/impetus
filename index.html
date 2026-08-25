@@ -16,12 +16,13 @@
     <nav id="topnav">
       <span class="brand">IMPETUS</span>
       <div class="nav-links">
-        <button class="navbtn active" data-view="play">Jouer</button>
-        <button class="navbtn" data-view="history">Parties</button>
-        <button class="navbtn" data-view="profile">Profil</button>
+        <button class="navbtn active" data-view="play" data-i18n="nav.play">Jouer</button>
+        <button class="navbtn" data-view="history" data-i18n="nav.history">Parties</button>
+        <button class="navbtn" data-view="profile" data-i18n="nav.profile">Profil</button>
       </div>
       <div id="nav-auth"></div>
-      <button id="theme-toggle" title="Basculer jour / nuit"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg></button>
+      <button id="lang-toggle" class="mini" title="Changer de langue">EN</button>
+      <button id="theme-toggle" data-i18n-title="theme.toggle"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg></button>
     </nav>
 
     <div id="views">
@@ -32,71 +33,71 @@
         <div id="lobby" class="page">
           <div class="card hero">
             <h1 class="logo">IMPETUS</h1>
-            <p class="tagline">Glisse. Bloque. Percée.</p>
+            <p class="tagline" data-i18n="hero.tagline">Glisse. Bloque. Percée.</p>
             <div class="tiles">
               <button class="tile" id="quick">
                 <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" stroke-linejoin="round"/></svg>
-                <span class="t-label">Partie rapide</span>
-                <small>classée si connecté · 5 min</small>
+                <span class="t-label" data-i18n="tile.quick">Partie rapide</span>
+                <small data-i18n="tile.quick.sub">classée si connecté · 5 min</small>
               </button>
               <button class="tile" id="tile-ai">
                 <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="14" height="12" rx="2"/><circle cx="9.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><circle cx="14.5" cy="13" r="1.4" fill="currentColor" stroke="none"/><path d="M12 7V4M8 4h8"/></svg>
-                <span class="t-label">Contre l'IA</span>
-                <small>3 niveaux · entraînement</small>
+                <span class="t-label" data-i18n="tile.ai">Contre l'IA</span>
+                <small data-i18n="tile.ai.sub">3 niveaux · entraînement</small>
               </button>
               <button class="tile" id="tile-local">
                 <svg class="t-icon" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3.2"/><circle cx="16" cy="9" r="3.2"/><path d="M3.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5M11.5 20c0-3 2-5 4.5-5s4.5 2 4.5 5"/></svg>
-                <span class="t-label">2 joueurs</span>
-                <small>même écran</small>
+                <span class="t-label" data-i18n="tile.local">2 joueurs</span>
+                <small data-i18n="tile.local.sub">même écran</small>
               </button>
             </div>
           </div>
 
           <div class="card wide">
-            <h2>Salons ouverts <span id="online-count" class="pill"></span></h2>
+            <h2><span data-i18n="lobby.rooms">Salons ouverts</span> <span id="online-count" class="pill"></span></h2>
             <div class="table-scroll">
             <table id="lobby-table">
               <thead>
-                <tr><th>Code</th><th>Hôte</th><th>Adversaire</th><th>Cadence</th><th>Classé</th><th>Statut</th><th></th></tr>
+                <tr><th data-i18n="th.code">Code</th><th data-i18n="th.host">Hôte</th><th data-i18n="th.opp">Adversaire</th><th data-i18n="th.clock">Cadence</th><th data-i18n="th.ranked">Classé</th><th data-i18n="th.status">Statut</th><th></th></tr>
               </thead>
               <tbody id="lobby-body">
-                <tr><td colspan="7" class="empty">Aucun salon ouvert pour l'instant — crée le premier !</td></tr>
+                <tr><td colspan="7" class="empty" data-i18n="lobby.empty">Aucun salon ouvert pour l'instant — crée le premier !</td></tr>
               </tbody>
             </table>
             </div>
             <details id="private-zone">
-              <summary>Salon privé (code)</summary>
-              <label class="check"><span>Cadence</span>
+              <summary data-i18n="lobby.private">Salon privé (code)</summary>
+              <label class="check"><span data-i18n="th.clock">Cadence</span>
                 <select id="clock-sel">
                   <option value="3+2" selected>3 min + 2 s</option>
                   <option value="5+0">5 min</option>
-                  <option value="none">Sans horloge</option>
+                  <option value="none" data-i18n="cadence.none">Sans horloge</option>
                 </select>
               </label>
-              <button id="room-create">Créer un salon</button>
+              <button id="room-create" data-i18n="room.create">Créer un salon</button>
               <div class="row">
-                <input id="room-code" maxlength="4" placeholder="CODE" />
-                <button id="room-join">Rejoindre</button>
+                <input id="room-code" maxlength="4" data-i18n-ph="room.placeholder" placeholder="CODE" />
+                <button id="room-join" data-i18n="room.join">Rejoindre</button>
               </div>
             </details>
-            <div id="net-status">Multijoueur : lance `npm run server` pour ouvrir un salon.</div>
+            <div id="net-status" data-i18n="net.status">Multijoueur : lance `npm run server` pour ouvrir un salon.</div>
           </div>
 
           <aside class="card auth-card">
-            <h2>Compte</h2>
+            <h2 data-i18n="account.title">Compte</h2>
             <form id="auth-form">
-              <input id="auth-name" placeholder="Pseudo" maxlength="16" autocomplete="username" />
-              <input id="auth-pass" type="password" placeholder="Mot de passe" maxlength="64" autocomplete="current-password" />
+              <input id="auth-name" data-i18n-ph="auth.pseudo" placeholder="Pseudo" maxlength="16" autocomplete="username" />
+              <input id="auth-pass" type="password" data-i18n-ph="auth.pass" placeholder="Mot de passe" maxlength="64" autocomplete="current-password" />
               <div class="row">
-                <button type="button" id="auth-login">Se connecter</button>
-                <button type="button" id="auth-register">Créer un compte</button>
+                <button type="button" id="auth-login" data-i18n="auth.login">Se connecter</button>
+                <button type="button" id="auth-register" data-i18n="auth.register">Créer un compte</button>
               </div>
             </form>
             <div id="auth-info" hidden>
               <div class="authed-line"><span id="auth-pseudo"></span><span class="elo" id="auth-elo"></span></div>
-              <button id="auth-logout" class="mini">Déconnexion</button>
+              <button id="auth-logout" class="mini" data-i18n="auth.logout">Déconnexion</button>
             </div>
-            <div id="auth-status">Connecte-toi pour que tes parties rapides comptent pour ton Elo.</div>
+            <div id="auth-status" data-i18n="auth.hint">Connecte-toi pour que tes parties rapides comptent pour ton Elo.</div>
           </aside>
         </div>
 
@@ -131,53 +132,53 @@
               <div id="reserves"></div>
               <section class="group" id="settings-group">
                 <label id="side-label">
-                  <span>Ta couleur</span>
+                  <span data-i18n="panel.side">Ta couleur</span>
                   <select id="side">
-                    <option value="black" selected>Noir (commence)</option>
-                    <option value="white">Blanc</option>
+                    <option value="black" selected data-i18n="side.black">Noir (commence)</option>
+                    <option value="white" data-i18n="side.white">Blanc</option>
                   </select>
                 </label>
                 <label id="level-label">
-                  <span>Niveau de l'IA</span>
+                  <span data-i18n="panel.level">Niveau de l'IA</span>
                   <select id="level">
-                    <option value="facile">Facile</option>
-                    <option value="normal" selected>Normal</option>
-                    <option value="difficile">Difficile</option>
+                    <option value="facile" data-i18n="level.facile">Facile</option>
+                    <option value="normal" selected data-i18n="level.normal">Normal</option>
+                    <option value="difficile" data-i18n="level.difficile">Difficile</option>
                   </select>
                 </label>
                 <label id="cadence-label">
-                  <span>Cadence</span>
+                  <span data-i18n="panel.cadence">Cadence</span>
                   <select id="cadence">
-                    <option value="none" selected>Sans horloge</option>
+                    <option value="none" selected data-i18n="cadence.none">Sans horloge</option>
                     <option value="3+2">3 min + 2 s</option>
                     <option value="5+0">5 min</option>
                   </select>
                 </label>
                 <label class="check" id="delayed-label">
                   <input type="checkbox" id="delayed" />
-                  <span>Percée différée — survivre à une riposte</span>
+                  <span data-i18n="delayed.label">Percée différée — survivre à une riposte</span>
                 </label>
               </section>
               <section class="group">
                 <label class="check">
                   <input type="checkbox" id="live" />
-                  <span>Analyse en direct</span>
+                  <span data-i18n="analysis.live">Analyse en direct</span>
                 </label>
-                <div id="eval-line">Analyse désactivée</div>
+                <div id="eval-line" data-i18n="analysis.off">Analyse désactivée</div>
                 <div id="lines"></div>
                 <div id="engine-info"></div>
               </section>
               <div id="controls">
-                <button id="new">Nouvelle partie</button>
-                <button id="undo" disabled>Annuler</button>
-                <button id="swap" hidden>Échanger (swap)</button>
-                <button id="resign" class="danger" hidden>Abandonner</button>
+                <button id="new" data-i18n="new">Nouvelle partie</button>
+                <button id="undo" disabled data-i18n="undo">Annuler</button>
+                <button id="swap" hidden data-i18n="swap">Échanger (swap)</button>
+                <button id="resign" class="danger" hidden data-i18n="resign">Abandonner</button>
               </div>
               <div id="controls-online">
-                <button id="rematch" hidden>Revanche</button>
-                <button id="back-lobby" class="mini">← Retour au lobby</button>
+                <button id="rematch" hidden data-i18n="rematch">Revanche</button>
+                <button id="back-lobby" class="mini" data-i18n="back.lobby">← Retour au lobby</button>
               </div>
-              <p class="hint" id="rules-hint">
+              <p class="hint" id="rules-hint" data-i18n="hint.std">
                 Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi =
                 capture). Trois façons de gagner : percée, anéantissement, immobilisation.
               </p>
@@ -190,26 +191,26 @@
       <section id="view-history" class="view">
         <div class="page">
           <div class="card wide">
-            <h2>Historique local</h2>
+            <h2 data-i18n="history.title">Historique local</h2>
             <table id="hist-table">
               <thead>
                 <tr>
-                  <th>Date</th><th>Niveau</th><th>Couleur</th><th>Résultat</th>
-                  <th>Fin</th><th>Coups</th><th></th>
+                  <th data-i18n="th.date">Date</th><th data-i18n="th.level">Niveau</th><th data-i18n="th.color">Couleur</th><th data-i18n="th.result">Résultat</th>
+                  <th data-i18n="th.finish">Fin</th><th data-i18n="th.moves">Coups</th><th></th>
                 </tr>
               </thead>
               <tbody id="hist-body"></tbody>
             </table>
           </div>
           <div class="card" id="replay-card" hidden>
-            <h2>Relecture</h2>
+            <h2 data-i18n="replay.title">Relecture</h2>
             <canvas id="replay-canvas" width="468" height="468"></canvas>
             <div id="replay-controls">
-              <button id="rp-start" title="Début"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h2v14H6zm12 0l-9 7 9 7z"/></svg></button>
-              <button id="rp-prev" title="Coup précédent"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
-              <button id="rp-auto" title="Lecture automatique"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-              <button id="rp-next" title="Coup suivant"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-              <button id="rp-end" title="Fin"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 5h2v14h-2zM6 5l9 7-9 7z"/></svg></button>
+              <button id="rp-start" data-i18n-title="replay.start"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h2v14H6zm12 0l-9 7 9 7z"/></svg></button>
+              <button id="rp-prev" data-i18n-title="replay.prev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+              <button id="rp-auto" data-i18n-title="replay.auto"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+              <button id="rp-next" data-i18n-title="replay.next"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+              <button id="rp-end" data-i18n-title="replay.end"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 5h2v14h-2zM6 5l9 7-9 7z"/></svg></button>
               <span id="rp-info"></span>
             </div>
           </div>
@@ -220,23 +221,23 @@
       <section id="view-profile" class="view">
         <div class="page narrow">
           <div class="card">
-            <h2>Joueur local</h2>
+            <h2 data-i18n="profile.title">Joueur local</h2>
             <div class="row">
-              <input id="pseudo-input" maxlength="24" placeholder="Pseudo" />
-              <button id="pseudo-save">Enregistrer</button>
+              <input id="pseudo-input" maxlength="24" data-i18n-ph="auth.pseudo" placeholder="Pseudo" />
+              <button id="pseudo-save" data-i18n="profile.save">Enregistrer</button>
             </div>
-            <p class="hint-left">
+            <p class="hint-left" data-i18n="profile.hint">
               Profil stocké dans ce navigateur. À l'arrivée des comptes en ligne, il sera migré
               vers ton compte permanent.
             </p>
           </div>
           <div class="card">
-            <h2>Classement Elo local</h2>
+            <h2 data-i18n="ratings.title">Classement Elo local</h2>
             <div id="ratings-list"></div>
           </div>
           <div class="card">
-            <h2>Données</h2>
-            <button id="reset-stats" class="danger">Effacer profil et historique</button>
+            <h2 data-i18n="data.title">Données</h2>
+            <button id="reset-stats" class="danger" data-i18n="data.reset">Effacer profil et historique</button>
           </div>
         </div>
       </section>

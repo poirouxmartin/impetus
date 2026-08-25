@@ -32,6 +32,7 @@ import { ReplayViewer } from './ui/replay'
 import { renderHistory, renderRatings } from './ui/profile'
 import { BOARD, currentTheme, initTheme, toggleTheme, type BoardPalette } from './ui/theme'
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
+import { initI18n, onLangChange, setLang, getLang, t, type Lang } from './ui/i18n'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -116,12 +117,9 @@ const backLobbyBtn = document.getElementById('back-lobby') as HTMLButtonElement
 const sideSelEl = document.getElementById('side') as HTMLSelectElement
 const levelSelEl = document.getElementById('level') as HTMLSelectElement
 
-const NAME: Record<Color, string> = { black: 'Noir', white: 'Blanc' }
-const REASON: Record<WinReason, string> = {
-  'percée': 'par percée',
-  'anéantissement': 'par anéantissement',
-  'immobilisation': 'par immobilisation',
-}
+const colorName = (c: Color): string => t(c === 'black' ? 'name.black' : 'name.white')
+const reasonLabel = (r: WinReason | null | undefined): string =>
+  r ? t(`reason.${r}`) : t('reason.victoire')
 
 interface Anim {
   color: Color
@@ -202,17 +200,17 @@ function renderAuthZone(): void {
     authPseudoEl.textContent = auth.name
     authEloEl.textContent = String(auth.rating)
     authNameInput.value = auth.name
-    authStatusEl.textContent = 'Compte connecté — parties rapides classées.'
+    authStatusEl.textContent = t('auth.logged')
     authStatusEl.className = 'ok'
   } else {
     authStatusEl.textContent =
-      'Connecte-toi pour que tes parties rapides comptent pour ton Elo.'
+      t('auth.hint')
     authStatusEl.className = ''
   }
   const navAuth = document.getElementById('nav-auth')!
   navAuth.innerHTML = logged
     ? `<span class="mini-auth">${auth!.name} · <b>${auth!.rating}</b></span>`
-    : '<span class="mini-auth guest">visiteur</span>'
+    : `<span class="mini-auth guest">${t('auth.guest')}</span>`
 }
 
 function handleAuthOk(token: string, p: { name: string; rating: number }): void {
@@ -240,9 +238,10 @@ function currentLevelKey(): LevelKey {
 
 function displayName(color: Color): string {
   if (mode === 'online' && online) {
-    return `${NAME[color]} (${color === online.color ? 'toi' : online.oppName || 'adversaire'})`
+    const who = color === online.color ? t('you.suffix') : online.oppName || t('opp.suffix')
+    return `${colorName(color)} (${who})`
   }
-  return NAME[color]
+  return colorName(color)
 }
 
 function netStatus(text: string): void {
@@ -286,7 +285,7 @@ function handleNet(msg: ServerMsg): void {
         saveAuth()
         renderAuthZone()
       }
-      netStatus(`Partie classée : ${msg.delta > 0 ? '+' : ''}${msg.delta} Elo → ${msg.rating}`)
+      netStatus(t('net.ranked', { delta: (msg.delta > 0 ? '+' : '') + msg.delta, rating: msg.rating }))
       return
     case 'joined':
       if (!currentNet) return
@@ -311,8 +310,8 @@ function handleNet(msg: ServerMsg): void {
       refresh()
       netStatus(
         online.oppName
-          ? `Salon ${msg.code} · adversaire : ${online.oppName}`
-          : `Salon ${msg.code} — en attente d'un adversaire…`,
+          ? t('net.joined.opp', { code: msg.code, name: online.oppName })
+          : t('net.joined.wait', { code: msg.code }),
       )
       break
     case 'move':
@@ -333,27 +332,27 @@ function handleNet(msg: ServerMsg): void {
       break
     case 'queued':
       inQueue = true
-      setQuickLabel('Annuler la recherche')
-      netStatus(`Recherche d'un adversaire… (${msg.count ?? 1} en file)`)
+      setQuickLabel(t('quick.cancel'))
+      netStatus(t('net.searching', { n: msg.count ?? 1 }))
       break
     case 'queue-left':
       inQueue = false
-      setQuickLabel('Partie rapide')
-      netStatus('Recherche annulée.')
+      setQuickLabel(t('tile.quick'))
+      netStatus(t('net.search.cancelled'))
       break
     case 'rematch-wait':
-      netStatus('Revanche proposée — en attente de l’adversaire…')
+      netStatus(t('net.rematch.wait'))
       break
     case 'oppJoined':
       if (online) online.oppName = msg.name
-      netStatus(`${msg.name} a rejoint la partie`)
+      netStatus(t('net.opp.joined', { name: msg.name }))
       refresh()
       break
     case 'opponentLeft':
       netStatus('Adversaire déconnecté')
       if (!game.winner) {
-        bannerTitle.textContent = 'Partie interrompue'
-        bannerSub.textContent = "L'adversaire s'est déconnecté"
+        bannerTitle.textContent = t('game.interrupted')
+        bannerSub.textContent = t('opp.left')
         bannerEl.hidden = false
       }
       break
@@ -376,7 +375,7 @@ const CLOCK_LABEL: Record<string, string> = {
 }
 
 function renderLobby(rooms: LobbyRoom[], onlineCount: number): void {
-  onlineCountEl.textContent = `${onlineCount} en ligne`
+  onlineCountEl.textContent = t('net.online.count', { n: onlineCount })
   lobbyBody.innerHTML = ''
   const open = rooms.filter((r) => r.status !== 'over')
   if (open.length === 0) {
@@ -453,8 +452,7 @@ function refresh(): void {
   updateBanners()
 
   if (w) {
-    const reasonText =
-      flagReason ?? ((game.winnerReason && REASON[game.winnerReason]) || game.winnerReason || 'victoire')
+    const reasonText = flagReason ?? reasonLabel(game.winnerReason)
     let eloNote = ''
     if (!recorded) {
       const result: 'win' | 'loss' =
@@ -478,21 +476,21 @@ function refresh(): void {
       if (delta !== 0) eloNote = ` · ${delta > 0 ? '+' : ''}${delta} Elo`
     }
     statusEl.innerHTML =
-      `<span class="winner">${displayName(w)} gagne</span><span class="reason"> — ${reasonText}</span>`
-    bannerTitle.textContent = `${displayName(w)} gagne`
-    bannerSub.textContent = `${reasonText}${eloNote} · Nouvelle partie ?`
+      `<span class="winner">${t('win.text', { name: colorName(w) })}</span><span class="reason"> — ${reasonText}</span>`
+    bannerTitle.textContent = t('win.text', { name: colorName(w) })
+    bannerSub.textContent = `${reasonText}${eloNote} ${t('banner.newgame')}`
     bannerEl.hidden = false
   } else if (aiThinking) {
-    statusEl.innerHTML = `L'IA réfléchit<span class="dots"></span>`
+    statusEl.innerHTML = `${t('ai.thinking')}<span class="dots"></span>`
     bannerEl.hidden = true
   } else {
     const pending = delayedCb.checked && mode !== 'online' && hasBreakthrough(pos, other(pos.turn))
     statusEl.textContent =
       mode === 'online' && online
-        ? `Toi : ${displayName(online.color)} · Trait : ${displayName(pos.turn)}`
+        ? t('you.turn', { color: displayName(online.color), turn: colorName(pos.turn) })
         : pending
-          ? `Tour : ${NAME[pos.turn]} — percée en attente : capture ou perds`
-          : `Tour : ${NAME[pos.turn]}`
+          ? t('turn.pending', { name: colorName(pos.turn) })
+          : t('turn', { name: colorName(pos.turn) })
     bannerEl.hidden = true
   }
 
@@ -578,14 +576,16 @@ function updateBanners(): void {
   evalbarEl.classList.toggle('flip', colorAtBottom() === 'black')
   const me = auth?.name ?? profile.pseudo
   if (mode === 'ai') {
-    pbnameTop.textContent = `IA · ${level.charAt(0).toUpperCase()}${level.slice(1)}`
+    pbnameTop.textContent = t('ai.name', {
+      level: level.charAt(0).toUpperCase() + level.slice(1),
+    })
     pbnameBottom.textContent = me
   } else if (mode === 'online' && online) {
     pbnameTop.textContent = online.oppName ?? 'Adversaire'
     pbnameBottom.textContent = me
   } else {
-    pbnameTop.textContent = NAME[colorAtTop()]
-    pbnameBottom.textContent = NAME[colorAtBottom()]
+    pbnameTop.textContent = colorName(colorAtTop())
+    pbnameBottom.textContent = colorName(colorAtBottom())
   }
 }
 
@@ -595,7 +595,7 @@ function pipRow(color: Color): string {  const reserve = game.position.reserves[
   const ghosts = Array.from({ length: captured }, () => '<span class="pip ghost"></span>').join('')
   const cap = captured > 0 ? `<span class="cap">−${captured}</span>` : ''
   return (
-    `<div class="side-row"><span class="tag ${color}">${NAME[color]}</span>` +
+    `<div class="side-row"><span class="tag ${color}">${colorName(color)}</span>` +
     `<span class="pips">${filled}${ghosts}</span>${cap}</div>`
   )
 }
@@ -1025,7 +1025,7 @@ undoBtn.addEventListener('click', () => {
 
 newBtn.addEventListener('click', () => {
   if (mode === 'online') {
-    netStatus('Utilise « Abandonner » pour quitter la partie en ligne.')
+    netStatus(t('net.use.resign'))
     return
   }
   applyRuleVariant()
@@ -1040,16 +1040,12 @@ newBtn.addEventListener('click', () => {
 })
 
 /* ==== Écrans lobby / partie ==== */
-const HINT_STD =
-  'Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi = capture). Trois façons de gagner : percée, anéantissement, immobilisation.'
-const HINT_DELAYED =
-  'Expérimental — percée différée : une pierre sur la rangée adverse ne gagne que si elle survit à une riposte (l\'adversaire doit la capturer).'
 
 /** Applique la variante de règles choisie (local uniquement). */
 function applyRuleVariant(): void {
   const delayed = delayedCb.checked
   setRules(delayed ? { breakthroughDelay: true } : undefined)
-  hintEl.textContent = delayed ? HINT_DELAYED : HINT_STD
+  hintEl.textContent = t(delayed ? 'hint.delayed' : 'hint.std')
 }
 
 function showLobby(): void {
@@ -1121,7 +1117,7 @@ function doAuth(registerMode: boolean): void {
   const name = authNameInput.value.trim()
   const pass = authPassInput.value
   if (!name || !pass) {
-    authStatusEl.textContent = '⚠ Pseudo et mot de passe requis'
+    authStatusEl.textContent = '⚠ ' + t('auth.required')
     return
   }
   openNet()
@@ -1140,7 +1136,7 @@ quickBtn.addEventListener('click', () => {
   const net = currentNet!
   if (inQueue) {
     net.send({ type: 'cancel-quick' })
-    netStatus('Recherche annulée.')
+    netStatus(t('net.search.cancelled'))
     return
   }
   net.send({ type: 'quick', name: auth?.name ?? profile.pseudo })
@@ -1223,11 +1219,11 @@ pseudoSave.addEventListener('click', () => {
   profile.pseudo = pseudoInput.value.trim() || 'Joueur'
   saveProfile(store, profile)
   pseudoSave.textContent = '✓'
-  setTimeout(() => (pseudoSave.textContent = 'Enregistrer'), 1200)
+  setTimeout(() => (pseudoSave.textContent = t('profile.save')), 1200)
 })
 
 resetStats.addEventListener('click', () => {
-  if (!confirm('Effacer définitivement le profil et tout l\'historique local ?')) return
+  if (!confirm(t('confirm.reset'))) return
   store.removeItem('impetus.profile.v1')
   store.removeItem('impetus.history.v1')
   profile = emptyProfile()
@@ -1238,7 +1234,32 @@ resetStats.addEventListener('click', () => {
 })
 
 const themeName = initTheme()
+initI18n()
 const themeToggle = document.getElementById('theme-toggle') as HTMLButtonElement
+const langToggle = document.getElementById('lang-toggle') as HTMLButtonElement
+
+function renderLangToggle(): void {
+  langToggle.textContent = (getLang() === 'fr' ? 'en' : 'fr').toUpperCase()
+  langToggle.title = t('lang.toggle')
+}
+
+renderLangToggle()
+langToggle.addEventListener('click', () => {
+  const next: Lang = getLang() === 'fr' ? 'en' : 'fr'
+  setLang(next)
+})
+
+onLangChange(() => {
+  renderLangToggle()
+  renderAuthZone()
+  updateBanners()
+  refresh()
+  applyRuleVariant()
+  setQuickLabel(inQueue ? t('quick.cancel') : t('tile.quick'))
+  renderHistoryTab()
+  renderRatings(ratingsList, profile)
+  updateAnalysisPanel()
+})
 
 const ICON_SUN =
   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>'
@@ -1270,7 +1291,7 @@ const WIN_SCORE = 1_000_000
 const MATE_THRESHOLD = WIN_SCORE - 64
 
 function fmtScore(cp: number): string {
-  return Math.abs(cp) >= MATE_THRESHOLD ? 'percée' : fmtCp(cp)
+  return Math.abs(cp) >= MATE_THRESHOLD ? t('analysis.mate') : fmtCp(cp)
 }
 
 /** Le mat n'est affiché qu'après deux profondeurs consécutives, puis persiste (3 profondeurs sans mat le retirent). */
@@ -1281,7 +1302,7 @@ let mateLatch: '' | 'black' | 'white' = ''
 
 function updateAnalysisPanel(): void {
   if (!liveOn) {
-    evalLineEl.textContent = 'Analyse désactivée'
+    evalLineEl.textContent = t('analysis.off')
     linesEl.innerHTML = ''
     infoEl.textContent = ''
     barWhite.style.height = '50%'
@@ -1321,10 +1342,13 @@ function updateAnalysisPanel(): void {
   if (mateLatch) {
     const plies = WIN_SCORE - Math.abs(cp)
     const moves = Math.max(1, Math.ceil(plies / 2))
-    evalLineEl.textContent = `Percée forcée en ~${moves} coups — ${mateLatch === 'black' ? 'Noir' : 'Blanc'} gagne`
+    evalLineEl.textContent = t('analysis.forced', {
+      n: moves,
+      side: t(mateLatch === 'black' ? 'name.black' : 'name.white'),
+    })
     barWhite.style.height = mateLatch === 'black' ? '0%' : '100%'
   } else {
-    evalLineEl.textContent = `Éval (Noir) : ${fmtCp(cp)}`
+    evalLineEl.textContent = t('analysis.eval', { cp: fmtCp(cp) })
     barWhite.style.height = `${(50 - 50 * Math.tanh(cp / 400)).toFixed(1)}%`
   }
   linesEl.innerHTML = a.lines

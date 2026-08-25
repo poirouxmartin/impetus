@@ -2,6 +2,7 @@ import { applyAction, Color, initialState, type Position } from '../core/rules'
 import type { Action } from '../core/rules'
 import type { GameRecord } from '../platform/store'
 import { BOARD, currentTheme } from './theme'
+import { t } from './i18n'
 
 const N = 9
 const CELL = 52
@@ -69,7 +70,7 @@ export class ReplayViewer {
   }
 
   private info(): void {
-    this.infoEl.textContent = `coup ${this.index} / ${this.total}`
+    this.infoEl.textContent = t('replay.info', { i: this.index, total: this.total })
   }
 
   private drawStone(x: number, y: number, color: Color): void {
@@ -135,7 +136,7 @@ export class ReplayViewer {
 
 export function replayNotation(a: Action): string {
   const sq = (r: number, c: number): string => 'abcdefghi'[c] + (r + 1)
-  if (a.kind === 'place') return `poser ${sq(a.row, a.col)}`
+  if (a.kind === 'place') return `${t('notation.place')} ${sq(a.row, a.col)}`
   if (a.kind === 'swap') return 'swap'
   return `${sq(a.row, a.col)}→${a.dir}`
 }
