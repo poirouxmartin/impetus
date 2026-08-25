@@ -240,6 +240,90 @@
         </div>
       </section>
 
+      <!-- ==================== RÈGLES ==================== -->
+      <section id="view-rules" class="view">
+        <div class="page narrow">
+          <div class="card">
+            <h2 data-i18n="rules.goal.title">Le but</h2>
+            <p class="hint-left" data-i18n-html="rules.goal.text">
+              Amène une pierre sur la rangée adverse et garde-la vivante un coup : c'est la
+              <b>percée</b>. Deux fins alternatives : l'<b>anéantissement</b> (plus de pierres
+              adverses nulle part) et l'<b>immobilisation</b> (l'adversaire n'a plus de coup légal).
+            </p>
+            <svg class="dg" viewBox="0 0 150 60" aria-hidden="true">
+              <g class="dg-grid">
+                <rect x="30" y="0" width="30" height="60" class="dg-camp-w" />
+                <rect x="90" y="0" width="30" height="60" class="dg-camp-b" />
+              </g>
+              <circle cx="105" cy="45" r="9" class="dg-stone-b" />
+              <circle cx="105" cy="15" r="9" class="dg-stone-w" />
+              <path d="M105 34v-10" class="dg-arrow" />
+              <path d="M101 28l4-6 4 6" class="dg-arrow" />
+            </svg>
+            <p class="dg-caption" data-i18n="rules.goal.diagram">
+              La pierre noire monte… si elle est encore là après la réponse blanche, elle gagne.
+            </p>
+          </div>
+          <div class="card">
+            <h2 data-i18n="rules.actions.title">Poser ou glisser</h2>
+            <p class="hint-left" data-i18n-html="rules.actions.text">
+              10 pierres chacune. À ton tour, une seule action : <b>poser</b> une pierre de ta
+              réserve sur ta rangée de départ, ou <b>glisser</b> une pierre tout droit d'au plus
+              3 cases. Elle percute un ennemi = <b>capture</b> ; allié ou bord = elle s'arrête
+              juste avant.
+            </p>
+            <svg class="dg" viewBox="0 0 150 60" aria-hidden="true">
+              <circle cx="45" cy="45" r="9" class="dg-stone-b" />
+              <path d="M45 34V16" class="dg-arrow" />
+              <path d="M40 22l5-8 5 8" class="dg-arrow" />
+              <circle cx="45" cy="12" r="4" class="dg-dot" />
+              <circle cx="105" cy="45" r="9" class="dg-stone-b" />
+              <circle cx="105" cy="15" r="9" class="dg-stone-w" />
+              <path d="M105 34v-8" class="dg-arrow" />
+              <path d="M101 30l4-6 4 6" class="dg-arrow" />
+              <circle cx="105" cy="15" r="11" class="dg-target" />
+            </svg>
+            <p class="dg-caption" data-i18n="rules.actions.diagram">
+              À gauche : la pose (points = cases libres). À droite : la glisse qui capture.
+            </p>
+          </div>
+          <div class="card">
+            <h2 data-i18n="rules.swap.title">L'échange (swap)</h2>
+            <p class="hint-left" data-i18n-html="rules.swap.text">
+              Après le tout premier coup, Blanc peut l'annuler : la pierre noire est retirée et
+              une pierre blanche est posée à sa position miroir. Cela neutralise l'avantage du
+              premier coup — réfléchis bien avant ta pose d'ouverture.
+            </p>
+            <svg class="dg" viewBox="0 0 150 60" aria-hidden="true">
+              <circle cx="45" cy="45" r="9" class="dg-stone-b" />
+              <path d="M52 39l46-18" class="dg-arrow-dashed" />
+              <path d="M92 24l8-3-3 8" class="dg-arrow-dashed" />
+              <circle cx="105" cy="15" r="9" class="dg-stone-w" />
+              <text x="45" y="59" class="dg-label" text-anchor="middle">d1</text>
+              <text x="105" y="7" class="dg-label" text-anchor="middle">d9</text>
+            </svg>
+            <p class="dg-caption" data-i18n="rules.swap.diagram">
+              d1 noire devient d9 blanche : les sièges ne changent pas.
+            </p>
+          </div>
+          <div class="card">
+            <h2 data-i18n="rules.rep.title">Anti-répétition</h2>
+            <p class="hint-left" data-i18n-html="rules.rep.text">
+              Une position identique (pierres + réserves + trait) ne peut pas être créée une
+              3e fois. Les navettes infinies sont interdites : la partie avance, toujours.
+            </p>
+          </div>
+          <div class="card">
+            <h2 data-i18n="rules.variant.title">Variante : percée immédiate</h2>
+            <p class="hint-left" data-i18n-html="rules.variant.text">
+              La règle standard (v1.2) est la percée différée ci-dessus. Pour les parties
+              rapides, la variante « percée immédiate » fait gagner dès l'arrivée — active-la
+              dans le panneau de jeu.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <!-- ==================== PROFIL ==================== -->
       <section id="view-profile" class="view">
         <div class="page narrow">

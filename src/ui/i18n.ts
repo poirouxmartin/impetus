@@ -7,7 +7,28 @@ type Dict = Record<string, string>
 const fr: Dict = {
   'nav.play': 'Jouer',
   'nav.history': 'Parties',
+  'nav.rules': 'Règles',
   'nav.profile': 'Profil',
+  'rules.goal.title': 'Le but',
+  'rules.goal.text':
+    'Amène une pierre sur la rangée adverse et garde-la vivante un coup : c\'est la <b>percée</b>. Deux fins alternatives : l\'<b>anéantissement</b> (plus de pierres adverses nulle part) et l\'<b>immobilisation</b> (l\'adversaire n\'a plus de coup légal).',
+  'rules.goal.diagram':
+    'La pierre noire monte… si elle est encore là après la réponse blanche, elle gagne.',
+  'rules.actions.title': 'Poser ou glisser',
+  'rules.actions.text':
+    '10 pierres chacune. À ton tour, une seule action : <b>poser</b> une pierre de ta réserve sur ta rangée de départ, ou <b>glisser</b> une pierre tout droit d\'au plus 3 cases. Elle percute un ennemi = <b>capture</b> ; allié ou bord = elle s\'arrête juste avant.',
+  'rules.actions.diagram':
+    'À gauche : la pose (points = cases libres). À droite : la glisse qui capture.',
+  'rules.swap.title': "L'échange (swap)",
+  'rules.swap.text':
+    "Après le tout premier coup, Blanc peut l'annuler : la pierre noire est retirée et une pierre blanche est posée à sa position miroir. Cela neutralise l'avantage du premier coup — réfléchis bien avant ta pose d'ouverture.",
+  'rules.swap.diagram': 'd1 noire devient d9 blanche : les sièges ne changent pas.',
+  'rules.rep.title': 'Anti-répétition',
+  'rules.rep.text':
+    'Une position identique (pierres + réserves + trait) ne peut pas être créée une 3e fois. Les navettes infinies sont interdites : la partie avance, toujours.',
+  'rules.variant.title': 'Variante : percée immédiate',
+  'rules.variant.text':
+    "La règle standard (v1.2) est la percée différée ci-dessus. Pour les parties rapides, la variante « percée immédiate » fait gagner dès l'arrivée — active-la dans le panneau de jeu.",
   'hero.tagline': 'Glisse. Bloque. Percée.',
   'tile.quick': 'Partie rapide',
   'tile.quick.sub': 'classée si connecté · 5 min',
@@ -140,7 +161,28 @@ const fr: Dict = {
 const en: Dict = {
   'nav.play': 'Play',
   'nav.history': 'Games',
+  'nav.rules': 'Rules',
   'nav.profile': 'Profile',
+  'rules.goal.title': 'The goal',
+  'rules.goal.text':
+    'Bring a stone to the far row and keep it alive for one turn: that\'s the <b>breakthrough</b>. Two alternative finishes: <b>annihilation</b> (no enemy stones left anywhere) and <b>immobilization</b> (the opponent has no legal move).',
+  'rules.goal.diagram':
+    'The black stone advances… if it is still there after White\'s reply, it wins.',
+  'rules.actions.title': 'Place or slide',
+  'rules.actions.text':
+    '10 stones each. On your turn, a single action: <b>place</b> a stone from your reserve on your home row, or <b>slide</b> a stone straight ahead up to 3 squares. Hitting an enemy = <b>capture</b>; ally or edge = it stops just before.',
+  'rules.actions.diagram':
+    'Left: the placement (dots = free squares). Right: the sliding capture.',
+  'rules.swap.title': 'The swap',
+  'rules.swap.text':
+    'After the very first move, White may cancel it: the black stone is removed and a white stone is placed at its mirrored position. This neutralizes the first-move advantage — think hard about your opening placement.',
+  'rules.swap.diagram': 'Black d1 becomes white d9: the seats do not change.',
+  'rules.rep.title': 'No repetition',
+  'rules.rep.text':
+    'An identical position (stones + reserves + turn) may not be created a 3rd time. Endless shuffling is banned: the game always moves forward.',
+  'rules.variant.title': 'Variant: immediate breakthrough',
+  'rules.variant.text':
+    'The standard rule (v1.2) is the delayed breakthrough above. For fast games, the "immediate breakthrough" variant wins upon arrival — enable it in the game panel.',
   'hero.tagline': 'Slide. Block. Break through.',
   'tile.quick': 'Quick game',
   'tile.quick.sub': 'ranked when signed in · 5 min',
@@ -291,11 +333,14 @@ export function onLangChange(fn: () => void): void {
   listeners.push(fn)
 }
 
-/** Applique les traductions aux éléments statiques (data-i18n, data-i18n-ph, data-i18n-title). */
+/** Applique les traductions aux éléments statiques (data-i18n, data-i18n-html, data-i18n-ph, data-i18n-title). */
 export function applyStatic(root: ParentNode = document): void {
   document.documentElement.lang = lang
   root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
     el.textContent = t(el.dataset.i18n!)
+  })
+  root.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml!)
   })
   root.querySelectorAll<HTMLElement>('[data-i18n-ph]').forEach((el) => {
     el.setAttribute('placeholder', t(el.dataset.i18nPh!))

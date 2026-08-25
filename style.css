@@ -529,6 +529,86 @@ td {
   color: var(--red);
 }
 
+/* ==================== PAGE RÈGLES ==================== */
+
+.dg {
+  width: 100%;
+  max-width: 300px;
+  display: block;
+  margin: 12px auto 4px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.dg-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.dg-camp-w {
+  fill: rgba(96, 118, 78, 0.18);
+  stroke: var(--line);
+}
+
+.dg-camp-b {
+  fill: rgba(150, 62, 38, 0.16);
+  stroke: var(--line);
+}
+
+.dg-stone-b {
+  fill: var(--pip-fill);
+  stroke: var(--pip-rim);
+  stroke-width: 1.5;
+}
+
+.dg-stone-w {
+  fill: var(--stone-light);
+  stroke: var(--pip-rim);
+  stroke-width: 1.5;
+}
+
+.dg-arrow {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dg-arrow-dashed {
+  stroke: var(--accent);
+  stroke-width: 2;
+  fill: none;
+  stroke-dasharray: 5 4;
+  stroke-linecap: round;
+}
+
+.dg-dot {
+  fill: var(--accent);
+}
+
+.dg-target {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+
+.dg-label {
+  fill: var(--muted);
+  font-size: 9px;
+  font-family: var(--font-body);
+}
+
+.dg-caption {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-align: center;
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
 button.mini {
   padding: 4px 10px;
   font-size: var(--fs-xs);
