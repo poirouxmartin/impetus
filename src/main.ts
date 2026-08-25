@@ -33,6 +33,7 @@ import { renderHistory, renderRatings } from './ui/profile'
 import { BOARD, currentTheme, initTheme, toggleTheme, type BoardPalette } from './ui/theme'
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 import { initI18n, onLangChange, setLang, getLang, t, type Lang } from './ui/i18n'
+import { chooseActionMCTS } from './core/mcts'
 import {
   isSoundOn,
   playCapture,
@@ -153,7 +154,7 @@ let anim: Anim | null = null
 let lastMove: { from: [number, number] | null; to: [number, number] } | null = null
 let mode: 'ai' | 'hotseat' | 'online' = 'ai'
 let humanSide: Color = 'black'
-let level: Level = 'normal'
+let level: Level | 'mcts' = 'normal'
 let aiThinking = false
 let analysis: EngineAnalysis | null = null
 let liveOn = false
@@ -262,7 +263,8 @@ function isAiTurn(): boolean {
 
 function currentLevelKey(): LevelKey {
   if (mode === 'online') return 'online'
-  return mode === 'ai' ? level : 'hotseat'
+  if (mode !== 'ai') return 'hotseat'
+  return level === 'mcts' ? 'difficile' : level
 }
 
 function displayName(color: Color): string {
@@ -634,7 +636,7 @@ function updateBanners(): void {
   }
   // Elo local du joueur (parties contre l'IA uniquement)
   let elo = ''
-  if (mode === 'ai') elo = String(profile.levels[level].rating)
+  if (mode === 'ai') elo = String(profile.levels[level === 'mcts' ? 'difficile' : level].rating)
   else if (mode === 'online' && auth) elo = String(auth.rating)
   const eloEl = document.getElementById('pb-elo-bottom')!
   eloEl.textContent = elo
@@ -676,7 +678,9 @@ function scheduleAi(): void {
   setTimeout(() => {
     let action: Action | null = null
     const legal = game.legalMoves()
-    if (level === 'difficile') {
+    if (level === 'mcts') {
+      action = chooseActionMCTS(game.position, legal, 900)
+    } else if (level === 'difficile') {
       const a = analyse(game.position, 900)
       const keyOf = (x: Action): string => JSON.stringify(x)
       const legalKeys = new Set(legal.map(keyOf))

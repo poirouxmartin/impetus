@@ -300,8 +300,11 @@ function breachRow(st: St, side: 1 | 2): boolean {
 const distToTarget = (i: number, side: 1 | 2): number =>
   Math.abs(Math.floor(i / S) - targetRowOf(side))
 
+const hangingBuf = new Int8Array(S * S)
+
 function evaluate(st: St): number {
-  const hanging = new Int8Array(S * S)
+  const hanging = hangingBuf
+  hanging.fill(0)
   for (let i = 0; i < S * S; i++) {
     const c = st.b[i]
     if (c === EMPTY) continue
@@ -331,6 +334,24 @@ function evaluate(st: St): number {
     if (dist === 1) score += sign * 30
     else if (dist === 2) score += sign * 15
     if (BREAKTHROUGH_DELAY && dist === 0) score += sign * 260
+    // menace de promotion : couloir droit dégagé vers la rangée cible (dist ≤ portée)
+    if (dist >= 1 && dist <= RANGE) {
+      const tr = targetRowOf(side)
+      const r = Math.floor(i / S)
+      const col2 = i % S
+      const dr = tr > r ? 1 : -1
+      let clear = true
+      for (let s2 = 1; s2 < dist; s2++) {
+        if (st.b[(r + dr * s2) * S + col2] !== EMPTY) {
+          clear = false
+          break
+        }
+      }
+      if (clear) {
+        const landing = st.b[tr * S + col2]
+        if (landing !== side) score += sign * (dist === 1 ? 110 : dist === 2 ? 55 : 25)
+      }
+    }
     if (hanging[i]) score -= sign * HANGING
   }
   score += (st.res[0] - st.res[1]) * 58
@@ -491,10 +512,23 @@ function search(st: St, depth: number, alpha: number, beta: number, ply: number)
   let best = -Infinity
   let bestMove: Move | null = null
   const me = st.turn
-  for (const m of moves) {
-    const sc = withMove(st, m, (u) =>
-      isWinAfter(st, m, u, me) ? WIN - ply - 1 : -search(st, depth - 1, -beta, -alpha, ply + 1),
-    )
+  for (let i = 0; i < moves.length; i++) {
+    const m = moves[i]
+    // PVS : fenêtre nulle sur les coups non-pincipaux, re-recherche si elle tombe dedans.
+    let sc: number
+    if (i === 0) {
+      sc = withMove(st, m, (u) =>
+        isWinAfter(st, m, u, me) ? WIN - ply - 1 : -search(st, depth - 1, -beta, -alpha, ply + 1),
+      )
+    } else {
+      const probe = withMove(st, m, (u) =>
+        isWinAfter(st, m, u, me) ? WIN - ply - 1 : -search(st, depth - 1, -alpha - 1, -alpha, ply + 1),
+      )
+      sc = probe
+      if (probe > alpha && probe < beta) {
+        sc = withMove(st, m, () => -search(st, depth - 1, -beta, -alpha, ply + 1))
+      }
+    }
     if (sc > best) {
       best = sc
       bestMove = m
@@ -553,7 +587,7 @@ export interface Analysis {
 }
 
 const STEP_CAP_MS = 3000
-const MAX_DEPTH = 40
+const MAX_DEPTH = 64
 
 export class Analyzer {
   private st: St
