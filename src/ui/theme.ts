@@ -48,15 +48,15 @@ export const BOARD: Record<ThemeName, BoardPalette> = {
     whiteRim: 'rgba(40, 32, 20, 0.60)',
   },
   light: {
-    // Travertin
-    bg: '#B5A789',
-    line: 'rgba(70, 58, 40, 0.50)',
+    // Travertin clair (bien plus lumineux que le granit du mode nuit)
+    bg: '#C9BCA2',
+    line: 'rgba(70, 58, 40, 0.42)',
     coord: 'rgba(50, 40, 24, 0.55)',
     campTopFill: 'rgba(138, 49, 32, 0.10)',
     campBottomFill: 'rgba(74, 107, 84, 0.12)',
-    filetTop: 'rgba(138, 49, 32, 0.65)',
-    filetBottom: 'rgba(74, 107, 84, 0.65)',
-    placeDot: 'rgba(50, 40, 24, 0.50)',
+    filetTop: 'rgba(138, 49, 32, 0.60)',
+    filetBottom: 'rgba(74, 107, 84, 0.60)',
+    placeDot: 'rgba(50, 40, 24, 0.45)',
     lastRing: 'rgba(138, 49, 32, 0.60)',
     lastRingSoft: 'rgba(138, 49, 32, 0.25)',
     selRing: '#8A3120',
@@ -66,7 +66,7 @@ export const BOARD: Record<ThemeName, BoardPalette> = {
     blackG1: '#0f0c09',
     blackRim: 'rgba(255, 255, 255, 0.35)',
     whiteG0: '#ffffff',
-    whiteG1: '#d8cfbc',
+    whiteG1: '#ddd4c1',
     whiteRim: 'rgba(60, 48, 30, 0.65)',
   },
 }

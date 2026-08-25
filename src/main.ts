@@ -33,6 +33,15 @@ import { renderHistory, renderRatings } from './ui/profile'
 import { BOARD, currentTheme, initTheme, toggleTheme, type BoardPalette } from './ui/theme'
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 import { initI18n, onLangChange, setLang, getLang, t, type Lang } from './ui/i18n'
+import {
+  isSoundOn,
+  playCapture,
+  playLoss,
+  playPlace,
+  playSlide,
+  playWin,
+  setSoundOn,
+} from './ui/sound'
 
 const LOGICAL = 630
 const CELL = LOGICAL / SIZE
@@ -99,6 +108,7 @@ const avatarBottom = document.getElementById('avatar-bottom') as HTMLElement
 const cadenceSel = document.getElementById('cadence') as HTMLSelectElement
 const cadenceLabel = document.getElementById('cadence-label') as HTMLElement
 const evalbarEl = document.getElementById('evalbar') as HTMLElement
+const soundCb = document.getElementById('sound-cb') as HTMLInputElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
 const quickLabel = quickBtn.querySelector('.t-label') as HTMLElement
@@ -171,6 +181,7 @@ let profile = loadProfile(store)
 let historyRecords = loadHistory(store)
 let gameId = 1
 let recorded = false
+let endPlayed = false
 let movesLog: Action[] = []
 
 interface AuthState {
@@ -298,6 +309,7 @@ function handleNet(msg: ServerMsg): void {
       game = new Game()
       movesLog = []
       recorded = false
+  endPlayed = false
       resetView()
       if (msg.state.clock) {
         clockSnap = { ...msg.state.clock, turn: msg.state.turn, running: !game.winner }
@@ -480,6 +492,13 @@ function refresh(): void {
     bannerTitle.textContent = t('win.text', { name: colorName(w) })
     bannerSub.textContent = `${reasonText}${eloNote} ${t('banner.newgame')}`
     bannerEl.hidden = false
+    if (!endPlayed) {
+      endPlayed = true
+      const mine =
+        mode === 'online' ? online?.color === w : mode === 'hotseat' ? true : w === humanSide
+      if (mine) playWin()
+      else playLoss()
+    }
   } else if (aiThinking) {
     statusEl.innerHTML = `${t('ai.thinking')}<span class="dots"></span>`
     bannerEl.hidden = true
@@ -704,6 +723,8 @@ function tryPlay(a: Action): void {
     }
   }
   if (!game.play(a)) return
+  if (a.kind === 'place') playPlace()
+  else if (a.kind === 'slide') move?.captured ? playCapture() : playSlide()
   if (localClock) {
     localClock[other(game.position.turn)] += localClock.inc
     localClock.last = Date.now()
@@ -1018,6 +1039,7 @@ undoBtn.addEventListener('click', () => {
     localClock.flagged = false
   }
   flagReason = null
+  endPlayed = false
   movesLog.length = Math.min(movesLog.length, game.position.moveCount)
   resetView()
   afterMove()
@@ -1034,6 +1056,7 @@ newBtn.addEventListener('click', () => {
   game = new Game()
   gameId++
   recorded = false
+  endPlayed = false
   movesLog = []
   resetView()
   afterMove()
@@ -1070,6 +1093,7 @@ function startAiGame(): void {
   level = levelSelEl.value as Level
   gameId++
   recorded = false
+  endPlayed = false
   movesLog = []
   resetView()
   clockSnap = null
@@ -1087,6 +1111,7 @@ function startLocalGame(): void {
   flipped = true
   gameId++
   recorded = false
+  endPlayed = false
   movesLog = []
   resetView()
   clockSnap = null
@@ -1203,6 +1228,33 @@ const rpNext = document.getElementById('rp-next') as HTMLButtonElement
 const rpEnd = document.getElementById('rp-end') as HTMLButtonElement
 const rpAuto = document.getElementById('rp-auto') as HTMLButtonElement
 
+/* Navigation clavier du replay (flèches, Home/End, espace) quand la carte est visible. */
+window.addEventListener('keydown', (e) => {
+  if (replayCard.hidden) return
+  const tag = (e.target as HTMLElement | null)?.tagName
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+  switch (e.key) {
+    case 'ArrowLeft':
+      replayer.step(-1)
+      break
+    case 'ArrowRight':
+      replayer.step(1)
+      break
+    case 'Home':
+      replayer.go(0)
+      break
+    case 'End':
+      replayer.go(replayer.total)
+      break
+    case ' ':
+      replayer.toggle()
+      break
+    default:
+      return
+  }
+  e.preventDefault()
+})
+
 function openReplay(rec: GameRecord): void {
   replayCard.hidden = false
   replayer.load(rec)
@@ -1275,6 +1327,9 @@ themeToggle.addEventListener('click', () => {
   const t = toggleTheme()
   renderThemeIcon(t)
 })
+
+soundCb.checked = isSoundOn()
+soundCb.addEventListener('change', () => setSoundOn(soundCb.checked))
 
 refresh()
 showView('play')

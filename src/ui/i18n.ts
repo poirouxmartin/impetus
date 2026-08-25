@@ -61,6 +61,7 @@ const fr: Dict = {
   'panel.cadence': 'Cadence',
   'cadence.none': 'Sans horloge',
   'delayed.label': 'Percée différée — survivre à une riposte',
+  'sound.label': 'Sons',
   'hint.std':
     'Pose sur ta rangée de départ ou glisse une pierre (max 3 cases, percute un ennemi = capture). Trois façons de gagner : percée, anéantissement, immobilisation.',
   'hint.delayed':
@@ -189,6 +190,7 @@ const en: Dict = {
   'panel.cadence': 'Clock',
   'cadence.none': 'No clock',
   'delayed.label': 'Delayed breakthrough — must survive a reply',
+  'sound.label': 'Sounds',
   'hint.std':
     'Place on your home row or slide a stone (max 3 squares, hitting an enemy = capture). Three ways to win: breakthrough, annihilation, immobilization.',
   'hint.delayed':

@@ -353,7 +353,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 54px;
+  min-height: 36px;
 }
 
 .line {
@@ -945,7 +945,7 @@ code {
   --btn-hover: #ddd2b8;
   --nav-active-bg: #efe5cc;
   --input-bg: #fffdf6;
-  --evalbar-bg: #dcd2bc;
+  --evalbar-bg: #a3957a;
   --red: #b0522f;
   --red-border: #c98a6b;
   --red-bg: #f3e0d8;
