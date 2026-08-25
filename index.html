@@ -107,6 +107,8 @@
             <div class="player-banner" id="pb-top">
               <span class="avatar" id="avatar-top"></span>
               <span class="pb-name" id="pbname-top">Adversaire</span>
+              <span class="pb-elo" id="pb-elo-top" hidden></span>
+              <span class="pb-cap" id="pb-cap-top"></span>
               <span class="pb-clock" id="bclock-top" hidden>–:––</span>
             </div>
             <div id="board-area">
@@ -124,6 +126,8 @@
             <div class="player-banner" id="pb-bottom">
               <span class="avatar" id="avatar-bottom"></span>
               <span class="pb-name" id="pbname-bottom">Joueur</span>
+              <span class="pb-elo" id="pb-elo-bottom" hidden></span>
+              <span class="pb-cap" id="pb-cap-bottom"></span>
               <span class="pb-clock" id="bclock-bottom" hidden>–:––</span>
             </div>
           </div>
@@ -172,8 +176,11 @@
                 <div id="lines"></div>
                 <div id="engine-info"></div>
               </section>
+              <section class="group" id="moves-group" hidden>
+                <div id="moves-rail"></div>
+              </section>
               <div id="controls">
-                <button id="new" data-i18n="new">Nouvelle partie</button>
+                <button id="new" class="primary" data-i18n="new">Nouvelle partie</button>
                 <button id="undo" disabled data-i18n="undo">Annuler</button>
                 <button id="swap" hidden data-i18n="swap">Échanger (swap)</button>
                 <button id="resign" class="danger" hidden data-i18n="resign">Abandonner</button>
@@ -195,6 +202,7 @@
         <div class="page">
           <div class="card wide">
             <h2 data-i18n="history.title">Historique local</h2>
+            <div id="hist-stats"></div>
             <table id="hist-table">
               <thead>
                 <tr>

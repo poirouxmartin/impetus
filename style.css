@@ -289,7 +289,7 @@ button:disabled {
 #evalbar {
   width: 12px;
   flex: none;
-  border-radius: var(--r-md) 0 0 var(--r-md);
+  border-radius: var(--r-lg) 0 0 var(--r-lg);
   background: var(--evalbar-bg);
   border: 1px solid var(--line);
   border-right: none;
@@ -326,10 +326,15 @@ button:disabled {
 #board-stack {
   flex: 1;
   position: relative;
+  padding: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: none;
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
 }
 
 #board-stack canvas {
-  border-radius: 0 var(--r-md) var(--r-md) 0;
+  border-radius: var(--r-sm);
   border-left: none;
 }
 
@@ -494,6 +499,35 @@ td {
 .badge.win { color: var(--accent); }
 .badge.loss { color: var(--red); }
 .badge.draw { color: var(--draw); }
+
+#hist-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.stat {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: 4px 14px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.stat b {
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.stat.win b {
+  color: var(--accent);
+}
+
+.stat.loss b {
+  color: var(--red);
+}
 
 button.mini {
   padding: 4px 10px;
@@ -877,6 +911,64 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pb-elo {
+  color: var(--muted-2);
+  font-size: var(--fs-xs);
+  flex: none;
+}
+
+.pb-cap {
+  margin-left: auto;
+  color: var(--red);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+
+.pb-cap:empty {
+  display: none;
+}
+
+.pb-cap::before {
+  content: '⚔ ';
+  font-size: var(--fs-xs);
+}
+
+#moves-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: var(--fs-sm);
+}
+
+.mv {
+  display: flex;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: var(--r-sm);
+}
+
+.mv:nth-child(odd) {
+  background: var(--bg-soft);
+}
+
+.mv-n {
+  color: var(--muted-2);
+  min-width: 28px;
+  font-variant-numeric: tabular-nums;
+}
+
+button.primary {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent-bg);
 }
 
 .pb-clock {

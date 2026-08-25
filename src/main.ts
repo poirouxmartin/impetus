@@ -109,6 +109,11 @@ const cadenceSel = document.getElementById('cadence') as HTMLSelectElement
 const cadenceLabel = document.getElementById('cadence-label') as HTMLElement
 const evalbarEl = document.getElementById('evalbar') as HTMLElement
 const soundCb = document.getElementById('sound-cb') as HTMLInputElement
+const movesGroup = document.getElementById('moves-group') as HTMLElement
+const movesRail = document.getElementById('moves-rail') as HTMLElement
+const captTopEl = document.getElementById('pb-cap-top') as HTMLElement
+const captBottomEl = document.getElementById('pb-cap-bottom') as HTMLElement
+const histStats = document.getElementById('hist-stats') as HTMLElement
 const clockSel = document.getElementById('clock-sel') as HTMLSelectElement
 const quickBtn = document.getElementById('quick') as HTMLButtonElement
 const quickLabel = quickBtn.querySelector('.t-label') as HTMLElement
@@ -183,6 +188,9 @@ let gameId = 1
 let recorded = false
 let endPlayed = false
 let movesLog: Action[] = []
+let movesNotation: string[] = []
+
+const sqName = (r: number, c: number): string => 'abcdefghi'[c] + (r + 1)
 
 interface AuthState {
   token: string
@@ -317,6 +325,7 @@ function handleNet(msg: ServerMsg): void {
       flagReason = null
       game = new Game()
       movesLog = []
+  movesNotation = []
       recorded = false
   endPlayed = false
       resetView()
@@ -471,6 +480,7 @@ function refresh(): void {
   swapBtn.hidden = !(game.swapAvailable() && (mode === 'hotseat' || pos.turn === humanSide))
   undoBtn.disabled = !game.canUndo() || aiThinking || mode === 'online'
   updateBanners()
+  renderRail()
 
   if (w) {
     const reasonText = flagReason ?? reasonLabel(game.winnerReason)
@@ -615,12 +625,37 @@ function updateBanners(): void {
     })
     pbnameBottom.textContent = me
   } else if (mode === 'online' && online) {
-    pbnameTop.textContent = online.oppName ?? 'Adversaire'
+    pbnameTop.textContent = online.oppName ?? t('opp.suffix')
     pbnameBottom.textContent = me
   } else {
     pbnameTop.textContent = colorName(colorAtTop())
     pbnameBottom.textContent = colorName(colorAtBottom())
   }
+  // Elo local du joueur (parties contre l'IA uniquement)
+  let elo = ''
+  if (mode === 'ai') elo = String(profile.levels[level].rating)
+  else if (mode === 'online' && auth) elo = String(auth.rating)
+  const eloEl = document.getElementById('pb-elo-bottom')!
+  eloEl.textContent = elo
+  eloEl.hidden = !elo
+  // pierres capturées par chaque camp
+  captTopEl.textContent = capturedBy(colorAtTop())
+  captBottomEl.textContent = capturedBy(colorAtBottom())
+}
+
+/** Pierres capturées PAR ce camp (celles perdues par l'adversaire). */
+function capturedBy(ofColor: Color): string {
+  const opp = other(ofColor)
+  const n = START_RESERVE - game.position.reserves[opp] - stonesOnBoard(opp)
+  return n > 0 ? `×${n}` : ''
+}
+
+function renderRail(): void {
+  movesGroup.hidden = movesNotation.length === 0
+  movesRail.innerHTML = movesNotation
+    .map((n, i) => `<div class="mv"><span class="mv-n">${i + 1}.</span><span>${n}</span></div>`)
+    .join('')
+  movesRail.scrollTop = movesRail.scrollHeight
 }
 
 function pipRow(color: Color): string {  const reserve = game.position.reserves[color]
@@ -740,6 +775,15 @@ function tryPlay(a: Action): void {
   if (!game.play(a)) return
   if (a.kind === 'place') playPlace()
   else if (a.kind === 'slide') move?.captured ? playCapture() : playSlide()
+  movesNotation.push(
+    a.kind === 'place'
+      ? `${t('notation.place')} ${sqName(a.row, a.col)}`
+      : a.kind === 'swap'
+        ? t('swap')
+        : move
+          ? `${sqName(a.row, a.col)}→${sqName(move.to[0], move.to[1])}`
+          : t('swap'),
+  )
   if (localClock) {
     localClock[other(game.position.turn)] += localClock.inc
     localClock.last = Date.now()
@@ -1056,6 +1100,7 @@ undoBtn.addEventListener('click', () => {
   flagReason = null
   endPlayed = false
   movesLog.length = Math.min(movesLog.length, game.position.moveCount)
+  movesNotation.length = Math.min(movesNotation.length, game.position.moveCount)
   resetView()
   afterMove()
 })
@@ -1073,6 +1118,7 @@ newBtn.addEventListener('click', () => {
   recorded = false
   endPlayed = false
   movesLog = []
+  movesNotation = []
   resetView()
   afterMove()
 })
@@ -1110,6 +1156,7 @@ function startAiGame(): void {
   recorded = false
   endPlayed = false
   movesLog = []
+  movesNotation = []
   resetView()
   clockSnap = null
   showGame()
@@ -1128,6 +1175,7 @@ function startLocalGame(): void {
   recorded = false
   endPlayed = false
   movesLog = []
+  movesNotation = []
   resetView()
   clockSnap = null
   showGame()
@@ -1235,6 +1283,25 @@ navBtns.forEach((b) => b.addEventListener('click', () => showView(b.dataset.view
 
 function renderHistoryTab(): void {
   renderHistory(histBody, historyRecords, openReplay)
+  const total = historyRecords.length
+  const wins = historyRecords.filter((r) => r.result === 'win').length
+  const rate = total ? Math.round((100 * wins) / total) : 0
+  let streak = 0
+  let streakKind: '' | 'win' | 'loss' = ''
+  for (const r of historyRecords) {
+    if (r.result === 'draw') continue
+    if (!streakKind) {
+      streakKind = r.result
+      streak = 1
+    } else if (r.result === streakKind) streak++
+    else break
+  }
+  histStats.innerHTML =
+    `<span class="stat"><b>${total}</b> ${t(total > 1 ? 'stats.games' : 'stats.game')}</span>` +
+    `<span class="stat"><b>${rate}%</b> ${t('stats.winrate')}</span>` +
+    (streakKind
+      ? `<span class="stat ${streakKind}"><b>${streak}</b> ${t(streakKind === 'win' ? 'stats.streak.win' : 'stats.streak.loss')}</span>`
+      : '')
 }
 
 const rpStart = document.getElementById('rp-start') as HTMLButtonElement
