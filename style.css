@@ -1072,6 +1072,12 @@ code {
   font-variant-numeric: tabular-nums;
 }
 
+#share-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 button.primary {
   border-color: var(--accent-border);
   color: var(--accent);

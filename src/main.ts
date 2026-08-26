@@ -34,6 +34,7 @@ import { BOARD, currentTheme, initTheme, toggleTheme, type BoardPalette } from '
 import { connectNet, type LobbyRoom, type NetClient, type ServerMsg } from './net/client'
 import { initI18n, onLangChange, setLang, getLang, t, type Lang } from './ui/i18n'
 import { chooseActionMCTS } from './core/mcts'
+import { decodeFen, decodeMoves, encodeFen, encodeMoves } from './core/fen'
 import {
   isSoundOn,
   playCapture,
@@ -1503,6 +1504,76 @@ themeToggle.addEventListener('click', () => {
 
 soundCb.checked = isSoundOn()
 soundCb.addEventListener('change', () => setSoundOn(soundCb.checked))
+
+/* ==== Partage FEN / liste de coups ==== */
+
+const copyFenBtn = document.getElementById('copy-fen') as HTMLButtonElement
+const copyMovesBtn = document.getElementById('copy-moves') as HTMLButtonElement
+const importPosBtn = document.getElementById('import-pos') as HTMLButtonElement
+
+copyFenBtn.addEventListener('click', () => {
+  const fen = encodeFen(game.position, !immediateCb.checked)
+  void navigator.clipboard?.writeText(fen)
+  copyFenBtn.textContent = '✓'
+  setTimeout(() => (copyFenBtn.textContent = t('share.fen')), 1200)
+})
+
+copyMovesBtn.addEventListener('click', () => {
+  const s = encodeMoves(movesLog)
+  void navigator.clipboard?.writeText(s)
+  copyMovesBtn.textContent = '✓'
+  setTimeout(() => (copyMovesBtn.textContent = t('share.moves')), 1200)
+})
+
+importPosBtn.addEventListener('click', () => {
+  const raw = prompt(t('share.import.prompt'))
+  if (!raw) return
+  const fen = decodeFen(raw)
+  if (fen) {
+    if (mode === 'online') {
+      netStatus(t('net.use.resign'))
+      return
+    }
+    setRules(fen.delayed ? undefined : { breakthroughDelay: false })
+    game = new Game()
+    game.loadPosition(fen.pos)
+    gameId++
+    recorded = true
+    endPlayed = false
+    flagReason = null
+    movesLog = []
+    movesNotation = []
+    resetView()
+    afterMove()
+    netStatus('FEN ✓')
+    return
+  }
+  const dm = decodeMoves(raw)
+  if (dm.moves.length > 0) {
+    if (mode === 'online') {
+      netStatus(t('net.use.resign'))
+      return
+    }
+    applyRuleVariant()
+    initLocalClock()
+    flagReason = null
+    game = new Game()
+    gameId++
+    recorded = true
+    endPlayed = false
+    movesLog = []
+    movesNotation = []
+    for (const a of dm.moves) {
+      if (!game.play(a)) break
+      movesLog.push(a)
+    }
+    resetView()
+    afterMove()
+    netStatus(dm.error ? `⚠ ${dm.error}` : '✓')
+    return
+  }
+  netStatus('⚠ ?')
+})
 
 refresh()
 showView('play')

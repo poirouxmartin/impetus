@@ -365,6 +365,17 @@ export class Game {
     )
   }
 
+  /** Charge une position arbitraire (import FEN) : historique remis à zéro. */
+  loadPosition(pos: Position): void {
+    this.position = pos
+    this.history = [pos]
+    this.reps = new Map([[positionHash(pos), 1]])
+    const lastMover = other(pos.turn)
+    const oc = outcome(pos, lastMover, this.reps)
+    this.winner = oc ? oc.winner : null
+    this.winnerReason = oc ? oc.reason : null
+  }
+
   /** Coups géométriquement légaux mais interdits par l'anti-répétition, avec occurrences courantes. */
   blockedByRepetition(): { action: Action; count: number }[] {
     if (this.winner !== null) return []
