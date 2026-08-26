@@ -15,6 +15,13 @@ const WIN = 1_000_000
 /** Réseau entraîné (src/core/nn-weights.json) — toujours présent une fois l'entraînement lancé. */
 const NET = nnWeightsJson as unknown as NnWeights | null
 
+/** Poids du réseau dans le mélange priors/valeur (0 = heuristiques seules). */
+let nnWeight = 0.5
+
+export function setNnWeight(w: number): void {
+  nnWeight = Math.max(0, Math.min(1, w))
+}
+
 function distanceToTarget(row: number, color: Color): number {
   return Math.abs(row - targetRow(color))
 }
@@ -76,7 +83,7 @@ function ensureNn(node: Node): void {
 function actionPrior(node: Node, action: Action): number {
   const heur = heuristicPrior(node.pos, action)
   ensureNn(node)
-  if (!node.nnLogits) return heur
+  if (!node.nnLogits || nnWeight <= 0) return heur
   let max = -Infinity
   const keys = node.untried.map(moveIndex)
   for (const k of keys) if (node.nnLogits[k] > max) max = node.nnLogits[k]
@@ -84,7 +91,7 @@ function actionPrior(node: Node, action: Action): number {
   let sum = Math.exp(node.nnLogits[kSelf] - max)
   for (const k of keys) sum += Math.exp(node.nnLogits[k] - max)
   const nnP = Math.exp(node.nnLogits[kSelf] - max) / sum
-  return 0.5 * nnP + 0.5 * heur
+  return nnWeight * nnP + (1 - nnWeight) * heur
 }
 
 function bestChild(node: Node): Node {
@@ -102,18 +109,6 @@ function bestChild(node: Node): Node {
   return best
 }
 
-/**
- * Choisit un coup par MCTS (budget en ms). `allowed` est déjà filtré par les règles.
- */
-export function chooseActionMCTS(
-  pos: Position,
-  allowed: Action[],
-  budgetMs = 900,
-): Action | null {
-  const res = analyseMCTS(pos, allowed, budgetMs)
-  return res?.best ?? null
-}
-
 export interface MctsLine {
   move: Action
   visits: number
@@ -127,84 +122,107 @@ export interface MctsAnalysis {
   lines: MctsLine[]
 }
 
-/** MCTS complet avec statistiques racine (pour le panneau d'analyse). */
+/**
+ * MCTS incrémental : le root persiste entre les appels à run() — les simulations
+ * s'accumulent (analyse continue tant qu'on rappelle run sur la même position).
+ */
+export class MctsEngine {
+  private root: Node
+  private allowed: Action[]
+  private sims = 0
+
+  constructor(pos: Position, allowed: Action[]) {
+    this.allowed = allowed
+    this.root = newNode(pos, null, null, 1)
+    this.root.untried = [...allowed].sort(() => Math.random() - 0.5)
+  }
+
+  /** Statistiques racine sans ajouter de simulations. */
+  stats(): MctsAnalysis {
+    const lines: MctsLine[] = this.root.children
+      .map((ch) => ({
+        move: ch.move!,
+        visits: ch.visits,
+        winrate: Math.round(
+          50 - 50 * Math.tanh(ch.visits > 0 ? ch.value / ch.visits / 400 : 0),
+        ),
+      }))
+      .sort((a, b) => b.visits - a.visits)
+    return { best: lines[0]?.move ?? null, sims: this.sims, lines }
+  }
+
+  run(budgetMs: number): MctsAnalysis {
+    const me = this.root.pos.turn
+    for (const a of this.allowed) {
+      if (winnerAfter(applyAction(this.root.pos, a), me) === me) {
+        return {
+          best: a,
+          sims: this.sims,
+          lines: this.allowed.map((x) => ({
+            move: x,
+            visits: x === a ? 1 : 0,
+            winrate: x === a ? 100 : 0,
+          })),
+        }
+      }
+    }
+    const deadline = Date.now() + Math.max(60, budgetMs)
+    while (Date.now() < deadline) {
+      let node = this.root
+      while (node.untried.length === 0 && node.children.length > 0) node = bestChild(node)
+      let v: number
+      const lost = winnerAfter(node.pos, other(node.pos.turn))
+      if (lost !== null) {
+        v = lost === node.pos.turn ? WIN : -WIN
+      } else if (node.untried.length > 0) {
+        const action = node.untried.pop()!
+        const childPos = applyAction(node.pos, action)
+        const pr = actionPrior(node, action)
+        const child = newNode(childPos, node, action, pr)
+        child.untried = legalActions(childPos).sort(() => Math.random() - 0.5)
+        node.children.push(child)
+        node = child
+        const lost2 = winnerAfter(node.pos, other(node.pos.turn))
+        if (lost2 !== null) {
+          v = lost2 === node.pos.turn ? WIN : -WIN
+        } else {
+          ensureNn(node)
+          const staticEval = evaluate(node.pos, node.pos.turn)
+          v =
+            NET && node.nnValue !== null && nnWeight > 0
+              ? nnWeight * (400 * node.nnValue) + (1 - nnWeight) * staticEval
+              : staticEval
+        }
+      } else {
+        v = evaluate(node.pos, node.pos.turn)
+      }
+      let cur: Node | null = node
+      while (cur) {
+        cur.visits++
+        cur.value += v
+        v = -v
+        cur = cur.parent
+      }
+      this.sims++
+    }
+    return this.stats()
+  }
+}
+
+export function chooseActionMCTS(
+  pos: Position,
+  allowed: Action[],
+  budgetMs = 900,
+): Action | null {
+  return new MctsEngine(pos, allowed).run(budgetMs).best
+}
+
 export function analyseMCTS(
   pos: Position,
   allowed: Action[],
   budgetMs = 600,
 ): MctsAnalysis | null {
   if (allowed.length === 0) return null
-
-  const me = pos.turn
-  for (const a of allowed) {
-    if (winnerAfter(applyAction(pos, a), me) === me) {
-      return {
-        best: a,
-        sims: 0,
-        lines: allowed.map((x) => ({
-          move: x,
-          visits: x === a ? 1 : 0,
-          winrate: x === a ? 100 : 0,
-        })),
-      }
-    }
-  }
-
-  const root = newNode(pos, null, null, 1)
-  root.untried = [...allowed].sort(() => Math.random() - 0.5)
-  const deadline = Date.now() + Math.max(60, budgetMs)
-  let sims = 0
-
-  while (Date.now() < deadline) {
-    let node = root
-    // 1. sélection : descendre par PUCT tant que tout est développé
-    while (node.untried.length === 0 && node.children.length > 0) node = bestChild(node)
-    // 2. valeur du nœud (terminale, nouvellement développée, ou évaluée)
-    let v: number
-    const lost = winnerAfter(node.pos, other(node.pos.turn))
-    if (lost !== null) {
-      v = lost === node.pos.turn ? WIN : -WIN
-    } else if (node.untried.length > 0) {
-      const action = node.untried.pop()!
-      const childPos = applyAction(node.pos, action)
-      const pr = actionPrior(node, action)
-      const child = newNode(childPos, node, action, pr)
-      // l'enfant doit pouvoir s'étendre à son tour, sinon l'arbre reste à profondeur 1
-      child.untried = legalActions(childPos).sort(() => Math.random() - 0.5)
-      node.children.push(child)
-      node = child
-      const lost2 = winnerAfter(node.pos, other(node.pos.turn))
-      if (lost2 !== null) {
-        v = lost2 === node.pos.turn ? WIN : -WIN
-      } else {
-        ensureNn(node)
-        const staticEval = evaluate(node.pos, node.pos.turn)
-        v = NET && node.nnValue !== null ? 0.5 * (400 * node.nnValue) + 0.5 * staticEval : staticEval
-      }
-    } else {
-      v = evaluate(node.pos, node.pos.turn)
-    }
-    // 3. sauvegarde : la valeur alterne de signe à chaque niveau (perspective du trait)
-    let cur: Node | null = node
-    while (cur) {
-      cur.visits++
-      cur.value += v
-      v = -v
-      cur = cur.parent
-    }
-    sims++
-  }
-
-  const lines: MctsLine[] = root.children
-    .map((ch) => ({
-      move: ch.move!,
-      visits: ch.visits,
-      // child.value est du point de vue du trait de l'enfant = l'adversaire du trait racine
-      winrate: Math.round(
-        50 - 50 * Math.tanh(ch.visits > 0 ? ch.value / ch.visits / 400 : 0),
-      ),
-    }))
-    .sort((a, b) => b.visits - a.visits)
-
-  return { best: lines[0]?.move ?? null, sims, lines }
+  return new MctsEngine(pos, allowed).run(budgetMs)
 }
+

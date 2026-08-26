@@ -1,4 +1,4 @@
-import { Action, BREAKTHROUGH_DELAY, Color, Dir, Position } from './rules'
+import { Action, BREAKTHROUGH_DELAY, Color, Dir, Position, applyAction } from './rules'
 
 export const DIR_NAMES: Dir[] = ['up', 'down', 'left', 'right']
 const DELTA = [
@@ -574,6 +574,8 @@ export interface AnalysisLine {
   action: Action
   notation: string
   score: number
+  /** Variation principale suivant ce coup (top 3 uniquement). */
+  pv?: string[]
 }
 
 export interface Analysis {
@@ -654,6 +656,11 @@ export class Analyzer {
       const action = moveToAction(m)
       return { action, notation: notation(action), score: s }
     })
+    // variation détaillée pour les 3 premiers coups
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      const childPos = applyAction(this.rootPos, lines[i].action)
+      lines[i].pv = this.extractPvFrom(childPos, 10)
+    }
     const best = lines[0] ?? null
     return {
       lines,
@@ -670,8 +677,12 @@ export class Analyzer {
 
   /** Variation principale : marche sur les meilleurs coups de la TT depuis la racine. */
   private extractPv(maxPlies = 16): string[] {
+    return this.extractPvFrom(this.rootPos, maxPlies)
+  }
+
+  private extractPvFrom(start: Position, maxPlies: number): string[] {
     const pv: string[] = []
-    const st = fromPosition(this.rootPos)
+    const st = fromPosition(start)
     const seen = new Set<number>([st.key])
     for (let i = 0; i < maxPlies; i++) {
       const e = tt.get(st.key)

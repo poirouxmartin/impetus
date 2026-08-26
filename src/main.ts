@@ -113,6 +113,7 @@ const cadenceSel = document.getElementById('cadence') as HTMLSelectElement
 const cadenceLabel = document.getElementById('cadence-label') as HTMLElement
 const evalbarEl = document.getElementById('evalbar') as HTMLElement
 const soundCb = document.getElementById('sound-cb') as HTMLInputElement
+const nnBlendCb = document.getElementById('nn-blend') as HTMLInputElement
 const movesGroup = document.getElementById('moves-group') as HTMLElement
 const movesRail = document.getElementById('moves-rail') as HTMLElement
 const captTopEl = document.getElementById('pb-cap-top') as HTMLElement
@@ -776,8 +777,7 @@ function ensureMctsWorker(): Worker {
         mctsRes = msg.res
         updateMctsPanel()
       }
-    }
-  }
+    }  }
   return mctsWorker
 }
 
@@ -786,17 +786,22 @@ function syncMcts(): void {
     mctsLinesEl = document.getElementById('mcts-lines')!
     mctsInfoEl = document.getElementById('mcts-info')!
   }
+  const blend = nnBlendCb.checked ? 0.5 : 0
   const shouldRun = liveOn && !game.winner && !aiThinking && !isAiTurn()
   if (!shouldRun) {
     mctsGen++
-    if (mctsWorker) mctsWorker.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 1 })
+    if (mctsWorker) mctsWorker.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 1, blend })
     mctsRes = null
     updateMctsPanel()
     return
   }
+  const myGen = ++mctsGen
   const w = ensureMctsWorker()
-  mctsGen++
-  w.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 600 })
+  w.postMessage({ type: 'mcts', gen: myGen, pos: clonePos(), rules: currentRules(), budget: 600, blend })
+  // simulations continues : on relance tant que la position et le gén n'ont pas changé
+  setTimeout(() => {
+    if (mctsGen === myGen && liveOn && !game.winner && !aiThinking && !isAiTurn()) syncMcts()
+  }, 700)
 }
 
 function updateMctsPanel(): void {
@@ -1505,6 +1510,11 @@ themeToggle.addEventListener('click', () => {
 soundCb.checked = isSoundOn()
 soundCb.addEventListener('change', () => setSoundOn(soundCb.checked))
 
+nnBlendCb.addEventListener('change', () => {
+  mctsGen++ // invalide l'analyse en cours : redémarre avec le nouveau mélange
+  syncMcts()
+})
+
 /* ==== Partage FEN / liste de coups ==== */
 
 const copyFenBtn = document.getElementById('copy-fen') as HTMLButtonElement
@@ -1656,7 +1666,8 @@ function updateAnalysisPanel(): void {
     .slice(0, 3)
     .map((l) => {
       const relBlack = a.turn === 'black' ? l.score : -l.score
-      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>`
+      const pvTxt = l.pv && l.pv.length > 1 ? `<div class="line-pv">${l.pv.join(' ')}</div>` : ''
+      return `<div class="line"><span>${l.notation}</span><span class="ls">${fmtScore(relBlack)}</span></div>${pvTxt}`
     })
     .join('')
   const nps = Math.round(a.nodes / Math.max(1, a.ms))

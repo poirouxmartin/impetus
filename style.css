@@ -395,6 +395,14 @@ button:disabled {
   min-height: 36px;
 }
 
+.line-pv {
+  font-size: var(--fs-xs);
+  color: var(--muted-2);
+  padding-left: 10px;
+  margin-top: -2px;
+  word-break: break-word;
+}
+
 .muted {
   color: var(--muted-2);
 }
