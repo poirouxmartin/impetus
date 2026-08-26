@@ -1,4 +1,4 @@
-import { Game } from '../core/rules'
+import { Game, type Action } from '../core/rules'
 import { chooseAction } from '../core/ai'
 import { chooseActionMCTS } from '../core/mcts'
 

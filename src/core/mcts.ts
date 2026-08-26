@@ -114,3 +114,87 @@ export function chooseActionMCTS(
   for (const ch of root.children) if (ch.visits > best.visits) best = ch
   return best?.move ?? null
 }
+
+export interface MctsLine {
+  move: Action
+  visits: number
+  /** Estimation de victoire pour le trait, en % (0–100). */
+  winrate: number
+}
+
+export interface MctsAnalysis {
+  best: Action | null
+  sims: number
+  lines: MctsLine[]
+}
+
+/** MCTS complet avec statistiques racine (pour le panneau d'analyse). */
+export function analyseMCTS(
+  pos: Position,
+  allowed: Action[],
+  budgetMs = 600,
+): MctsAnalysis | null {
+  if (allowed.length === 0) return null
+
+  const me = pos.turn
+  for (const a of allowed) {
+    if (winnerAfter(applyAction(pos, a), me) === me) {
+      return {
+        best: a,
+        sims: 0,
+        lines: allowed.map((x) => ({
+          move: x,
+          visits: x === a ? 1 : 0,
+          winrate: x === a ? 100 : 0,
+        })),
+      }
+    }
+  }
+
+  const root = newNode(pos, null, null, 1)
+  root.untried = [...allowed].sort(() => Math.random() - 0.5)
+  const deadline = Date.now() + Math.max(60, budgetMs)
+  let sims = 0
+
+  while (Date.now() < deadline) {
+    let node = root
+    while (node.untried.length === 0 && node.children.length > 0) node = bestChild(node)
+    let v: number
+    const lost = winnerAfter(node.pos, other(node.pos.turn))
+    if (lost !== null) {
+      v = lost === node.pos.turn ? WIN : -WIN
+    } else if (node.untried.length > 0) {
+      const action = node.untried.pop()!
+      const childPos = applyAction(node.pos, action)
+      const child = newNode(childPos, node, action, prior(node.pos, action))
+      child.untried = legalActions(childPos).sort(() => Math.random() - 0.5)
+      node.children.push(child)
+      node = child
+      const lost2 = winnerAfter(node.pos, other(node.pos.turn))
+      v = lost2 !== null ? (lost2 === node.pos.turn ? WIN : -WIN) : evaluate(node.pos, node.pos.turn)
+    } else {
+      v = evaluate(node.pos, node.pos.turn)
+    }
+    let cur: Node | null = node
+    while (cur) {
+      cur.visits++
+      cur.value += v
+      v = -v
+      cur = cur.parent
+    }
+    sims++
+  }
+
+  const lines: MctsLine[] = root.children
+    .map((ch) => ({
+      move: ch.move!,
+      visits: ch.visits,
+      // child.value est du point de vue du trait de l'enfant = l'adversaire du trait racine
+      winrate: Math.round(
+        50 - 50 * Math.tanh(ch.visits > 0 ? ch.value / ch.visits / 400 : 0),
+      ),
+    }))
+    .sort((a, b) => b.visits - a.visits)
+
+  return { best: lines[0]?.move ?? null, sims, lines }
+}

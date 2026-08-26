@@ -365,6 +365,17 @@ export class Game {
     )
   }
 
+  /** Coups géométriquement légaux mais interdits par l'anti-répétition, avec occurrences courantes. */
+  blockedByRepetition(): { action: Action; count: number }[] {
+    if (this.winner !== null) return []
+    return legalActions(this.position)
+      .map((a) => ({
+        action: a,
+        count: this.reps.get(positionHash(applyAction(this.position, a))) ?? 0,
+      }))
+      .filter((x) => x.count >= MAX_OCCURRENCES)
+  }
+
   swapAvailable(): boolean {
     return this.winner === null && isLegal(this.position, { kind: 'swap' })
   }

@@ -368,6 +368,37 @@ button:disabled {
   min-height: 36px;
 }
 
+.an-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.an-title {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+#pv-line {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  min-height: 1.2em;
+  word-break: break-word;
+}
+
+#mcts-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.muted {
+  color: var(--muted-2);
+}
+
 .line {
   display: flex;
   justify-content: space-between;

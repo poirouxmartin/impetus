@@ -69,6 +69,7 @@ const swapBtn = document.getElementById('swap') as HTMLButtonElement
 
 const liveCb = document.getElementById('live') as HTMLInputElement
 const evalLineEl = document.getElementById('eval-line')!
+const pvLineEl = document.getElementById('pv-line')!
 const linesEl = document.getElementById('lines')!
 const infoEl = document.getElementById('engine-info')!
 const barWhite = document.getElementById('evalbar-white')!
@@ -532,12 +533,13 @@ function refresh(): void {
     bannerEl.hidden = true
   } else {
     const pending = !immediateCb.checked && mode !== 'online' && hasBreakthrough(pos, other(pos.turn))
+    const blocked = game.blockedByRepetition().length
     statusEl.textContent =
       mode === 'online' && online
         ? t('you.turn', { color: displayName(online.color), turn: colorName(pos.turn) })
         : pending
           ? t('turn.pending', { name: colorName(pos.turn) })
-          : t('turn', { name: colorName(pos.turn) })
+          : t('turn', { name: colorName(pos.turn) }) + (blocked > 0 ? ` · ⛔ ${t('rep.blocked', { n: blocked })}` : '')
     bannerEl.hidden = true
   }
 
@@ -741,11 +743,83 @@ function syncAnalysis(): void {
       analysisGen++
       analysisWorker.postMessage({ type: 'stop', gen: analysisGen })
     }
+    syncMcts()
     return
   }
   const w = ensureWorker()
   analysisGen++
   w.postMessage({ type: 'analyse', gen: analysisGen, pos: clonePos(), rules: currentRules() })
+  syncMcts()
+}
+
+/* ==== Analyse MCTS (worker dédié) ==== */
+
+let mctsWorker: Worker | null = null
+let mctsGen = 0
+let mctsRes: import('./core/mcts').MctsAnalysis | null = null
+let mctsLinesEl: HTMLElement
+let mctsInfoEl: HTMLElement
+
+function ensureMctsWorker(): Worker {
+  if (!mctsWorker) {
+    mctsWorker = new Worker(new URL('./core/mcts.worker.ts', import.meta.url), {
+      type: 'module',
+    })
+    mctsWorker.onmessage = (e) => {
+      const msg = e.data as {
+        type: string
+        gen?: number
+        res?: import('./core/mcts').MctsAnalysis
+      }
+      if (msg.type === 'mcts' && msg.gen === mctsGen && msg.res) {
+        mctsRes = msg.res
+        updateMctsPanel()
+      }
+    }
+  }
+  return mctsWorker
+}
+
+function syncMcts(): void {
+  if (!mctsLinesEl) {
+    mctsLinesEl = document.getElementById('mcts-lines')!
+    mctsInfoEl = document.getElementById('mcts-info')!
+  }
+  const shouldRun = liveOn && !game.winner && !aiThinking && !isAiTurn()
+  if (!shouldRun) {
+    mctsGen++
+    if (mctsWorker) mctsWorker.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 1 })
+    mctsRes = null
+    updateMctsPanel()
+    return
+  }
+  const w = ensureMctsWorker()
+  mctsGen++
+  w.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 600 })
+}
+
+function updateMctsPanel(): void {
+  if (!liveOn || !mctsRes) {
+    mctsLinesEl.innerHTML = ''
+    mctsInfoEl.textContent = ''
+    return
+  }
+  mctsLinesEl.innerHTML = mctsRes.lines
+    .slice(0, 3)
+    .map((l) => {
+      let nota: string
+      if (l.move.kind === 'place') nota = `${t('notation.place')} ${sqName(l.move.row, l.move.col)}`
+      else if (l.move.kind === 'swap') nota = t('swap')
+      else {
+        const dest = slideDestination(game.position.cells, l.move.row, l.move.col, l.move.dir, game.position.turn)
+        nota = dest ? `${sqName(l.move.row, l.move.col)}→${sqName(dest.row, dest.col)}${dest.capture ? ' ×' : ''}` : '?'
+      }
+      const wr = Math.round(l.winrate)
+      const wrColor = wr >= 55 ? 'var(--accent)' : wr <= 45 ? 'var(--red)' : 'var(--muted)'
+      return `<div class="line"><span>${nota}</span><span class="ls" style="color:${wrColor}">${wr}% · ${l.visits}</span></div>`
+    })
+    .join('')
+  mctsInfoEl.textContent = t('analysis.sims', { n: mctsRes.sims })
 }
 
 function tryPlay(a: Action): void {
@@ -1458,6 +1532,7 @@ function updateAnalysisPanel(): void {
   if (!liveOn) {
     evalLineEl.textContent = t('analysis.off')
     linesEl.innerHTML = ''
+    pvLineEl.textContent = ''
     infoEl.textContent = ''
     barWhite.style.height = '50%'
     prevMateSide = ''
@@ -1470,6 +1545,7 @@ function updateAnalysisPanel(): void {
   if (!a) {
     evalLineEl.textContent = '…'
     linesEl.innerHTML = ''
+    pvLineEl.textContent = ''
     infoEl.textContent = ''
     prevMateSide = ''
     mateStable = 0
@@ -1514,6 +1590,7 @@ function updateAnalysisPanel(): void {
     .join('')
   const nps = Math.round(a.nodes / Math.max(1, a.ms))
   infoEl.textContent = `profondeur ${a.depth} · ${nps} k nœuds/s · ${(a.nodes / 1000).toFixed(0)}k nœuds`
+  pvLineEl.textContent = a.pv.length >= 1 ? 'PV : ' + a.pv.join('  ') : ''
 }
 
 

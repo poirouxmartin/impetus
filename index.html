@@ -174,9 +174,18 @@
                   <input type="checkbox" id="live" />
                   <span data-i18n="analysis.live">Analyse en direct</span>
                 </label>
-                <div id="eval-line" data-i18n="analysis.off">Analyse désactivée</div>
-                <div id="lines"></div>
-                <div id="engine-info"></div>
+                <div class="an-block">
+                  <div class="an-title" data-i18n="analysis.negamax">Negamax</div>
+                  <div id="eval-line" data-i18n="analysis.off">Analyse désactivée</div>
+                  <div id="lines"></div>
+                  <div id="pv-line"></div>
+                  <div id="engine-info"></div>
+                </div>
+                <div class="an-block">
+                  <div class="an-title" data-i18n="analysis.mcts">MCTS</div>
+                  <div id="mcts-lines"></div>
+                  <div id="mcts-info" class="muted"></div>
+                </div>
               </section>
               <section class="group" id="moves-group" hidden>
                 <div id="moves-rail"></div>

@@ -584,6 +584,8 @@ export interface Analysis {
   nodes: number
   ms: number
   turn: Color
+  /** Variation principale reconstruite depuis la table de transposition. */
+  pv: string[]
 }
 
 const STEP_CAP_MS = 3000
@@ -591,6 +593,7 @@ const MAX_DEPTH = 64
 
 export class Analyzer {
   private st: St
+  private rootPos: Position
   private rootTurn: Color
   private rootMoves: Move[]
   private scored: { m: Move; s: number }[] = []
@@ -601,6 +604,7 @@ export class Analyzer {
 
   constructor(pos: Position) {
     this.st = fromPosition(pos)
+    this.rootPos = pos
     this.rootTurn = pos.turn
     this.rootMoves = []
     genMoves(this.st, this.rootMoves, false)
@@ -660,7 +664,30 @@ export class Analyzer {
       nodes: this.cumNodes,
       ms: this.cumMs,
       turn: this.rootTurn,
+      pv: this.extractPv(),
     }
+  }
+
+  /** Variation principale : marche sur les meilleurs coups de la TT depuis la racine. */
+  private extractPv(maxPlies = 16): string[] {
+    const pv: string[] = []
+    const st = fromPosition(this.rootPos)
+    const seen = new Set<number>([st.key])
+    for (let i = 0; i < maxPlies; i++) {
+      const e = tt.get(st.key)
+      if (!e || e.key2 !== st.key2 || !e.m) break
+      const moves: Move[] = []
+      genMoves(st, moves, false)
+      const m = moves.find(
+        (x) => x.kind === e.m!.kind && x.to === e.m!.to && x.from === e.m!.from && x.dir === e.m!.dir,
+      )
+      if (!m) break
+      pv.push(notation(moveToAction(m)))
+      applyMove(st, m)
+      if (seen.has(st.key)) break
+      seen.add(st.key)
+    }
+    return pv
   }
 }
 

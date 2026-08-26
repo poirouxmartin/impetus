@@ -46,10 +46,9 @@ function tone({ freq, to, dur, type = 'triangle', gain = 0.18, delay = 0 }: Tone
   osc.stop(t0 + dur + 0.02)
 }
 
-/** Poser une pierre : « tock » sourd. */
+/** Poser une pierre : « pouf » doux et mat. */
 export function playPlace(): void {
-  tone({ freq: 190, to: 150, dur: 0.09, type: 'triangle', gain: 0.22 })
-  tone({ freq: 950, dur: 0.025, type: 'square', gain: 0.05 })
+  tone({ freq: 150, to: 118, dur: 0.07, type: 'sine', gain: 0.11 })
 }
 
 /** Glisser : souffle bref descendant. */
