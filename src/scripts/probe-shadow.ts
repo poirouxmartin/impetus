@@ -1,4 +1,4 @@
-import { Game, legalActions } from '../core/rules'
+import { Game } from '../core/rules'
 import { chooseAction } from '../core/ai'
 import { analyse } from '../core/engine'
 

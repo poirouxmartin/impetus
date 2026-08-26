@@ -14,7 +14,9 @@
     "duel": "esbuild src/scripts/duel.ts --bundle --platform=node --format=cjs --outfile=dist/duel.cjs --log-level=warning && node dist/duel.cjs",
     "server": "esbuild server/server.ts --bundle --platform=node --format=cjs --outfile=dist-server/server.cjs --log-level=warning && node dist-server/server.cjs",
     "wstest": "esbuild scripts/wstest.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-server/wstest.mjs --log-level=warning && node dist-server/wstest.mjs",
-    "shots": "esbuild scripts/shot.mjs --bundle --platform=node --format=esm --packages=external --outfile=dist-server/shot.mjs --log-level=warning && node dist-server/shot.mjs"
+    "shots": "esbuild scripts/shot.mjs --bundle --platform=node --format=esm --packages=external --outfile=dist-server/shot.mjs --log-level=warning && node dist-server/shot.mjs",
+    "nn:gen": "esbuild src/scripts/gen-dataset.ts --bundle --platform=node --format=cjs --outfile=dist/gen-dataset.cjs --log-level=warning && node dist/gen-dataset.cjs",
+    "nn:train": "esbuild src/scripts/train-nn.ts --bundle --platform=node --format=cjs --outfile=dist/train-nn.cjs --log-level=warning && node dist/train-nn.cjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",

@@ -14,7 +14,12 @@ for (let ply = 0; ply < 30 && !g.winner; ply++) {
   let a
   if (g.position.turn === 'black') {
     a = chooseAction(g.position, 'normal', g.legalMoves(), 200)
-    const nota = a ? `${'abcdefghi'[a.kind === 'place' ? a.col : a.col]}${a.kind === 'place' ? (a as { row: number }).row + 1 : ''}${a.kind === 'slide' ? '→' : ''}` : '?'
+    const nota =
+      a?.kind === 'place'
+        ? `${'abcdefghi'[a.col]}${a.row + 1}`
+        : a?.kind === 'slide'
+          ? `${'abcdefghi'[a.col]}${a.row + 1}→`
+          : 'swap'
     if (a?.kind === 'slide' && `${a.row},${a.col}` === lastFrom) shuffles++
     if (a?.kind === 'slide') lastFrom = `${a.row},${a.col}`
     console.log(`  ply ${ply} noir : ${nota} ${a?.kind}`)
