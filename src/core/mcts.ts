@@ -119,6 +119,8 @@ export interface MctsLine {
 export interface MctsAnalysis {
   best: Action | null
   sims: number
+  /** Profondeur maximale atteinte dans l'arbre. */
+  depth: number
   lines: MctsLine[]
 }
 
@@ -130,6 +132,7 @@ export class MctsEngine {
   private root: Node
   private allowed: Action[]
   private sims = 0
+  private maxDepth = 0
 
   constructor(pos: Position, allowed: Action[]) {
     this.allowed = allowed
@@ -148,7 +151,7 @@ export class MctsEngine {
         ),
       }))
       .sort((a, b) => b.visits - a.visits)
-    return { best: lines[0]?.move ?? null, sims: this.sims, lines }
+    return { best: lines[0]?.move ?? null, sims: this.sims, depth: this.maxDepth, lines }
   }
 
   run(budgetMs: number): MctsAnalysis {
@@ -158,6 +161,7 @@ export class MctsEngine {
         return {
           best: a,
           sims: this.sims,
+          depth: this.maxDepth,
           lines: this.allowed.map((x) => ({
             move: x,
             visits: x === a ? 1 : 0,
@@ -197,12 +201,15 @@ export class MctsEngine {
         v = evaluate(node.pos, node.pos.turn)
       }
       let cur: Node | null = node
+      let d = 0
       while (cur) {
+        d++
         cur.visits++
         cur.value += v
         v = -v
         cur = cur.parent
       }
+      if (d > this.maxDepth) this.maxDepth = d
       this.sims++
     }
     return this.stats()

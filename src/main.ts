@@ -787,25 +787,36 @@ function syncMcts(): void {
     mctsInfoEl = document.getElementById('mcts-info')!
   }
   const blend = nnBlendCb.checked ? 0.5 : 0
-  const shouldRun = liveOn && !game.winner && !aiThinking && !isAiTurn()
-  if (!shouldRun) {
-    mctsGen++
-    if (mctsWorker) mctsWorker.postMessage({ type: 'mcts', gen: mctsGen, pos: clonePos(), rules: currentRules(), budget: 1, blend })
+  const shouldRun = liveOn && !game.winner && !isAiTurn()
+  const myGen = ++mctsGen
+  if (shouldRun) {
+    const w = ensureMctsWorker()
+    w.postMessage({ type: 'mcts', gen: myGen, pos: clonePos(), rules: currentRules(), budget: 600, blend })
+  } else {
     mctsRes = null
     updateMctsPanel()
-    return
   }
-  const myGen = ++mctsGen
-  const w = ensureMctsWorker()
-  w.postMessage({ type: 'mcts', gen: myGen, pos: clonePos(), rules: currentRules(), budget: 600, blend })
-  // simulations continues : on relance tant que la position et le gén n'ont pas changé
-  setTimeout(() => {
-    if (mctsGen === myGen && liveOn && !game.winner && !aiThinking && !isAiTurn()) syncMcts()
-  }, 700)
+  // boucle résiliente : tant que le gén n'a pas changé, on continue (ou reprend) les simulations
+  setTimeout(() => mctsLoop(myGen), 750)
+}
+
+function mctsLoop(myGen: number): void {
+  if (myGen !== mctsGen) return
+  if (liveOn && !game.winner && !isAiTurn()) {
+    const w = ensureMctsWorker()
+    w.postMessage({ type: 'mcts', gen: myGen, pos: clonePos(), rules: currentRules(), budget: 600, blend: nnBlendCb.checked ? 0.5 : 0 })
+  }
+  setTimeout(() => mctsLoop(myGen), 750)
+}
+
+function fmtVisits(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k'
+  return String(n)
 }
 
 function updateMctsPanel(): void {
-  if (!liveOn || !mctsRes) {
+  if (!liveOn || !mctsRes || mctsRes.sims === 0) {
     mctsLinesEl.innerHTML = ''
     mctsInfoEl.textContent = ''
     return
@@ -822,10 +833,10 @@ function updateMctsPanel(): void {
       }
       const wr = Math.round(l.winrate)
       const wrColor = wr >= 55 ? 'var(--accent)' : wr <= 45 ? 'var(--red)' : 'var(--muted)'
-      return `<div class="line"><span>${nota}</span><span class="ls" style="color:${wrColor}">${wr}% · ${l.visits}</span></div>`
+      return `<div class="line"><span>${nota}</span><span class="ls" style="color:${wrColor}">${wr}% · ${fmtVisits(l.visits)}</span></div>`
     })
     .join('')
-  mctsInfoEl.textContent = t('analysis.sims', { n: mctsRes.sims })
+  mctsInfoEl.textContent = `${t('analysis.sims', { n: fmtVisits(mctsRes.sims) })} · ${t('analysis.depth', { n: mctsRes.depth })}`
 }
 
 function tryPlay(a: Action): void {
