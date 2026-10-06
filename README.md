@@ -2,7 +2,7 @@
 
 Abstract 1v1 board game, zero randomness. Simple to learn (2 actions, 30 seconds), designed for a depth comparable to go and chess. *(Formerly "Glisse" during the design phase.)*
 
-Project page: [martinpoiroux.com/en/projects/impetus](https://martinpoiroux.com/en/projects/impetus/)
+Project page: [martinpoiroux.com/projets/impetus/](https://martinpoiroux.com/projets/impetus/)
 
 ## Pitch
 
