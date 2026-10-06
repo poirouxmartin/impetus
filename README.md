@@ -2,6 +2,8 @@
 
 Abstract 1v1 board game, zero randomness. Simple to learn (2 actions, 30 seconds), designed for a depth comparable to go and chess. *(Formerly "Glisse" during the design phase.)*
 
+Project page: [martinpoiroux.com/en/projects/impetus](https://martinpoiroux.com/en/projects/impetus/)
+
 ## Pitch
 
 Every stone placed redraws all the slide corridors on the board. Blocking, deflecting, deliberately closing off your own exit: space itself is the weapon.
@@ -115,3 +117,7 @@ Online roadmap:
 3. **`game-solver` synergy**: depth/complexity analysis, partial resolution
 4. **Rules iterations** until competitive stability
 5. **Online 1v1**: accounts, ELO, matchmaking, chess.com format
+
+## License
+
+Code: MIT. The game design and rules text: © 2026 Martin Poiroux, all rights reserved.
